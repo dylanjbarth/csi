@@ -26,4 +26,5 @@ Dennis M. Richie: American, invented C and Unix. Died in 2011. Phd from Harvard 
 - use define keyword for constants 
 - character constants => single quotes => numerical value of the contents. 
 - function arguments are passed by value not by reference (unless a pointer is passed as the argument explicitly). For arrays, you are passing an address to the beginning of the array, not a copy of the array. 
-- Next steps – work on end of chapter exercises.
+- Next steps – work on end of chapter exercises. 
+- 
