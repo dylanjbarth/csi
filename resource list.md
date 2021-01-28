@@ -1,0 +1,7 @@
+- What software engineers can learn from engineering: https://www.hillelwayne.com/post/crossover-project/what-we-can-learn/ 
+- https://www.youtube.com/watch?v=3018ABlET1Y Are we really engineers – Hillel Wayne 
+- https://www.youtube.com/watch?v=KJgsSFOSQv0&ab_channel=freeCodeCamp.org freecodecamp C programming tutorial ~4hours 
+- https://exercism.io/my/tracks/c c track on exercism
+- https://modernc.gforge.inria.fr/ C book
+- https://gobyexample.com/ Go Book
+- https://beej.us/guide/bgc/html//index.html C book
