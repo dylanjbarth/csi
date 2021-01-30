@@ -62,4 +62,8 @@ Dennis M. Richie: American, invented C and Unix. Died in 2011. Phd from Harvard 
 - CLI arguments - main is always called with two arguments, argc (argument count) and argv (argument vector) is a pointer to array of character strings containing the argument
 
 # Ch 6: Structures 
-- 
+- collection of variables grouped under a common name used to organize complicated data, eg point of coordinates 
+- struct keyword with brackets, each var has a declaration 
+- can be nested 
+- cannot compare them to one another (but can compare members)
+- can create types with typedef keyword to define specific types. 

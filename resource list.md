@@ -5,3 +5,4 @@
 - https://modernc.gforge.inria.fr/ C book
 - https://gobyexample.com/ Go Book
 - https://beej.us/guide/bgc/html//index.html C book
+- https://www.youtube.com/watch?v=ShEez0JkOFw Programming with Hand Tools
