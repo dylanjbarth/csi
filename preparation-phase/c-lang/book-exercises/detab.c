@@ -10,16 +10,20 @@ int main()
   int n = COLUMNSIZE;
   while ((c = getchar()) != EOF)
   {
-    if (c == '\t')
+    switch (c)
     {
-      for (int i = 0; i < n; i++)
-      {
-        printf(" ");
-      }
-    }
-    else
-    {
+    case '\t':
+      printf("\t");
+      break;
+    case '\b':
+      printf("\b");
+      break;
+    case '\\':
+      printf("\\");
+      break;
+    default:
       printf("%c", c);
+      break;
     }
   }
 }
