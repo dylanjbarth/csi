@@ -25,3 +25,17 @@
 
 - allocating memory dynamically helps us store data without initially knowing the size of the data. 
 - malloc is the keyword to allocate memory and it returns a pointer. free frees memory. 
+
+
+## Style in C:
+
+[oz](https://app.slack.com/team/U06MG2E3X)  [37 minutes ago](https://bradfield.slack.com/archives/G01KDURS65B/p1612226379083000?thread_ts=1612108531.079000&cid=G01KDURS65B)  
+
+[@Dylan Barth](https://bradfield.slack.com/team/U01KP7934EQ)an interesting stylistic thing with C is that long procedural code is kind of encouraged, at least over high levels of abstraction. It takes some getting used to if you’re from a community like say ruby where you’re encouraged to factor like crazy, or clojure etc where you do a lot of functional composition. But you might grow to like it.
+
+[oz](https://app.slack.com/team/U06MG2E3X)  [36 minutes ago](https://bradfield.slack.com/archives/G01KDURS65B/p1612226443083200?thread_ts=1612108531.079000&cid=G01KDURS65B)  
+
+Here is the obligatory John Carmack article on writing long functions![:slightly_smiling_face:](https://a.slack-edge.com/production-standard-emoji-assets/13.0/apple-medium/1f642.png)[http://number-none.com/blow/john\_carmack\_on\_inlined\_code.html](http://number-none.com/blow/john_carmack_on_inlined_code.html)
+[oz](https://app.slack.com/team/U06MG2E3X)  [31 minutes ago](https://bradfield.slack.com/archives/G01KDURS65B/p1612226702083500?thread_ts=1612108531.079000&cid=G01KDURS65B)  
+
+As an example of long procedural code in C, consider the main interpreter loop in cpython:[https://github.com/python/cpython/blob/master/Python/ceval.c#L1523](https://github.com/python/cpython/blob/master/Python/ceval.c#L1523)

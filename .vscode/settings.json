@@ -3,6 +3,8 @@
     "__locale": "cpp",
     "cstring": "cpp",
     "ostream": "c",
-    "limits.h": "c"
+    "limits.h": "c",
+    "ctype.h": "c",
+    "string.h": "c"
   }
 }
