@@ -67,3 +67,16 @@ Dennis M. Richie: American, invented C and Unix. Died in 2011. Phd from Harvard 
 - can be nested 
 - cannot compare them to one another (but can compare members)
 - can create types with typedef keyword to define specific types. 
+
+# Ch 7: Input and Output
+- feeling gratitude for the stdlib and stdio libraries..
+- fopen, getchar, putchar, stderr, stdin, stdout, fclose, fgets, fputs, math.h
+
+# Ch 8: The UNIX System Interface
+- interact with UNIX OS via system calls (OS functions)
+- all I/O happens via reading or writing file in UNIX, your program receives a file descriptor if it tries to read a file that exists and you have permission to, basically a file pointer. 
+- programs by default get 3 file descriptions when they run, `stdin`, `stdout`, `stderr`. 
+- `read, write, open, creat.` 
+- often limit of ~20 file descriptors a program may have open simultaneously.
+- `lseek` `fseek`
+- 
