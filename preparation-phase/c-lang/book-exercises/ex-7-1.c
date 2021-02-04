@@ -10,15 +10,13 @@
 int main(int argc, char *argv[])
 {
   int c;
-  // printf("%s", argv[0]);
-  // printf("%s", argv[1]);
-  // printf("%s", argv[1]);
-  if (!argv[1])
+  char *first_arg = argv[1];
+  if (!first_arg)
   {
     printf("Must be called with %s or %s", UPPER, LOWER);
     exit(0);
   }
-  if (strcmp(argv[1], UPPER) == 0)
+  if (strcmp(first_arg, UPPER) == 0)
   {
     while ((c = getchar()) != EOF)
     {
@@ -26,7 +24,7 @@ int main(int argc, char *argv[])
     }
   }
 
-  else if (strcmp(argv[1], LOWER) == 0)
+  else if (strcmp(first_arg, LOWER) == 0)
   {
     while ((c = getchar()) != EOF)
     {
