@@ -7,7 +7,7 @@ build: clean
 	gcc -g -o $(PROGRAM) ls-clone.c
 
 run: build
-	./$(PROGRAM) 1 2 3
+	./$(PROGRAM) . ls-clone.c 2 3
 
 debug: build
 	lldb ./$(PROGRAM)
