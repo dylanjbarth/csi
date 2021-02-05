@@ -1,3 +1,4 @@
 .ztr-directory
 *.out*
+*.dSYM
 *.vscode*
