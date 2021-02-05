@@ -79,4 +79,5 @@ Dennis M. Richie: American, invented C and Unix. Died in 2011. Phd from Harvard 
 - `read, write, open, creat.` 
 - often limit of ~20 file descriptors a program may have open simultaneously.
 - `lseek` `fseek`
+- directory is composed of a filename and inode number – inode is where all information about a file is kept. 
 - 
