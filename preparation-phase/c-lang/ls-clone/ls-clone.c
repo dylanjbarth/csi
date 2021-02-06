@@ -1,9 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/stat.h>
 #include <dirent.h>
 
 #define PROGRAM "ls-clone"
+#define COLWIDTH "20"
 
 int is_file(struct stat *f);
 int is_dir(struct stat *f);
@@ -13,10 +15,17 @@ void print_dir(char *dir);
 
 int main(int argc, char *argv[])
 {
-  while (--argc > 0)
+  if (argc > 1)
   {
-    char *cur_arg = *++argv;
-    print_dir_or_file(cur_arg);
+    while (--argc > 0)
+    {
+      char *cur_arg = *++argv;
+      print_dir_or_file(cur_arg);
+    }
+  }
+  else
+  {
+    print_dir_or_file(".");
   }
 }
 
@@ -54,11 +63,13 @@ int is_dir(struct stat *f)
 
 void print_file(char *name, struct stat *st)
 {
+  // Assume regular mode
+  // fprintf(stdout, "%" COLWIDTH "s", name);
   fprintf(stdout, "File %s\n", name);
-  fprintf(stdout, "Mode %u\n", st->st_mode);
-  fprintf(stdout, "User ID %u\n", st->st_uid);
-  fprintf(stdout, "Group ID %u\n", st->st_gid);
-  fprintf(stdout, "File Size %lld\n", st->st_size);
+  // fprintf(stdout, "Mode %u\n", st->st_mode);
+  // fprintf(stdout, "User ID %u\n", st->st_uid);
+  // fprintf(stdout, "Group ID %u\n", st->st_gid);
+  // fprintf(stdout, "File Size %lld\n", st->st_size);
 }
 
 void print_dir(char *dir)
@@ -70,11 +81,13 @@ void print_dir(char *dir)
     fprintf(stderr, "Cannot access dir %s\n", dir);
     return;
   }
-  fprintf(stdout, "Able to access dir %s\n", dir);
   while ((dp = readdir(dirfd)) != NULL)
   {
+    char *full_path;
+    char *fmt = dir[-1] == '/' ? "%s%s" : "%s/%s";
+    sprintf(full_path, fmt, dir, dp->d_name);
     struct stat statbuf;
-    int stat_result = stat(dp->d_name, &statbuf);
+    int stat_result = stat(full_path, &statbuf);
     if (stat_result == -1)
     {
       fprintf(stderr, "Unable to access %s.\n", dp->d_name);
