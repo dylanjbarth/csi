@@ -7,7 +7,7 @@
 #include <unistd.h>
 
 #define PROGRAM "ls-clone"
-#define COLWIDTH "20"
+#define MINCOLBUFFER 2
 #define MAX_DIRENT 65535  // https://stackoverflow.com/a/466596 ?
 #define MAX_FILENAME 1024 // meh https://www.systutorials.com/maximum-allowed-file-path-length-for-c-programming-on-linux/
 
@@ -21,7 +21,7 @@ struct dirfile entries[MAX_DIRENT];
 int is_file(struct stat *f);
 int is_dir(struct stat *f);
 void print_dir_or_file(char *s);
-void print_file(struct dirfile *d);
+void print_file(struct dirfile *d, int colsize);
 void print_dir(char *dir);
 int make_dirfile(char *filename, struct dirfile *df);
 int win_cols;
@@ -58,7 +58,7 @@ void print_dir_or_file(char *dir_or_file)
   {
     struct dirfile *f = (struct dirfile *)malloc(sizeof(struct dirfile));
     int access = make_dirfile(dir_or_file, f);
-    print_file(f);
+    print_file(f, win_cols);
     free(f);
   }
   else if (is_dir(&statbuf))
@@ -93,11 +93,15 @@ int is_dir(struct stat *f)
   return S_ISDIR(f->st_mode);
 }
 
-void print_file(struct dirfile *d)
+void print_file(struct dirfile *d, int colsize)
 {
   // Assume regular mode
   // fprintf(stdout, "%" COLWIDTH "s", name);
-  fprintf(stdout, "File %s\n", d->filename);
+  fprintf(stdout, "%s", d->filename);
+  for (size_t i = strlen(d->filename); i < colsize; i++)
+  {
+    fprintf(stdout, " ");
+  }
   // fprintf(stdout, "Mode %u\n", st->st_mode);
   // fprintf(stdout, "User ID %u\n", st->st_uid);
   // fprintf(stdout, "Group ID %u\n", st->st_gid);
@@ -113,7 +117,7 @@ void print_dir(char *dir)
     fprintf(stderr, "Cannot access dir %s\n", dir);
     return;
   }
-  int idx = 0;
+  int idx = 0, longest = 0;
   while ((dp = readdir(dirfd)) != NULL)
   {
     char *fmt = dir[-1] == '/' ? "%s%s" : "%s/%s";
@@ -121,8 +125,22 @@ void print_dir(char *dir)
     sprintf(full_path, fmt, dir, dp->d_name);
     make_dirfile(full_path, &entries[idx]);
     free(full_path);
-    print_file(&entries[idx]);
+    int f_len = strlen(dp->d_name);
+    if (longest < f_len)
+    {
+      longest = f_len;
+    }
     idx++;
+  }
+  int col_size = longest + MINCOLBUFFER;
+  int n_cols = win_cols / col_size;
+  for (size_t i = 0; i < idx; i++)
+  {
+    print_file(&entries[i], col_size);
+    if (i % n_cols == 0)
+    {
+      fprintf(stdout, "\n");
+    }
   }
   closedir(dirfd);
 }
