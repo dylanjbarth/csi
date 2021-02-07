@@ -163,7 +163,7 @@ void insert_to_entries(struct dirfile *f, int entries_len, int (*strategy)(struc
     entries[entries_len] = f;
     return;
   }
-  int idx = 0;
+  int idx = 1;
   // Search until the end of the list OR we find a place where the previous value is less than current is equal to or greater than.
   while (idx < entries_len && !(strategy(f, entries[idx - 1]) < 0 && strategy(f, entries[idx]) >= 0))
   {
