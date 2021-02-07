@@ -27,7 +27,8 @@ build-tests: clean-tests
 		echo "Test $$nfiles" > test/$$nfiles.txt; \
 		((nfiles = nfiles + 1)) ; \
 	done
-	# create a few more with fun permissions
+	# create a few more with interesting permissions or file lengths.
+	touch test/areallllllllllllllllllllllllllllllylongfilename.txt && chmod 0777 test/areallllllllllllllllllllllllllllllylongfilename.txt
 	touch test/global_all.txt && chmod 0777 test/global_all.txt
 	touch test/user_read.txt && chmod 0400 test/user_read.txt
 	touch test/group_read.txt && chmod 0740 test/group_read.txt
