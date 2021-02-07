@@ -8,7 +8,7 @@
 
 #define PROGRAM "ls-clone"
 #define COLWIDTH "20"
-#define MAXDIRSIZE 65535  // https://stackoverflow.com/a/466596 ?
+#define MAX_DIRENT 65535  // https://stackoverflow.com/a/466596 ?
 #define MAX_FILENAME 1024 // meh https://www.systutorials.com/maximum-allowed-file-path-length-for-c-programming-on-linux/
 
 struct dirfile
@@ -16,6 +16,7 @@ struct dirfile
   char filename[MAX_FILENAME];
   struct stat s;
 };
+struct dirfile entries[MAX_DIRENT];
 
 int is_file(struct stat *f);
 int is_dir(struct stat *f);
@@ -105,7 +106,6 @@ void print_file(struct dirfile *d)
 
 void print_dir(char *dir)
 {
-  int idx = 0;
   DIR *dirfd;
   struct dirent *dp;
   if ((dirfd = opendir(dir)) == NULL)
@@ -113,15 +113,15 @@ void print_dir(char *dir)
     fprintf(stderr, "Cannot access dir %s\n", dir);
     return;
   }
+  int idx = 0;
   while ((dp = readdir(dirfd)) != NULL)
   {
     char *fmt = dir[-1] == '/' ? "%s%s" : "%s/%s";
     char *full_path = (char *)malloc(sizeof(dir) + sizeof(fmt) + sizeof(dp->d_name));
     sprintf(full_path, fmt, dir, dp->d_name);
-    struct dirfile *d = (struct dirfile *)malloc(sizeof(struct dirfile));
-    make_dirfile(full_path, d);
-    print_file(d);
-    free(d);
+    make_dirfile(full_path, &entries[idx]);
+    free(full_path);
+    print_file(&entries[idx]);
     idx++;
   }
   closedir(dirfd);
