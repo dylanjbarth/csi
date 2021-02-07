@@ -7,7 +7,7 @@
 #include <unistd.h>
 
 #define PROGRAM "ls-clone"
-#define COLGUTTER 2
+#define COLGUTTER 5
 #define MAX_DIRENT 65535  // https://stackoverflow.com/a/466596 ?
 #define MAX_FILENAME 1024 // meh https://www.systutorials.com/maximum-allowed-file-path-length-for-c-programming-on-linux/
 
@@ -142,13 +142,14 @@ void print_dir(char *dir)
   }
   int col_size = longest + COLGUTTER;
   int n_cols = win_cols / col_size;
-  for (size_t i = 0; i < idx; i++)
+  int n_rows = idx / n_cols;
+  for (size_t row = 0; row < n_rows; row++)
   {
-    print_file(entries[i], col_size);
-    if (i % n_cols == 0)
+    for (size_t col = 0; col < n_cols; col++)
     {
-      fprintf(stdout, "\n");
+      print_file(entries[(n_rows * col) + row], col_size);
     }
+    fprintf(stdout, "\n");
   }
   closedir(dirfd);
 }
