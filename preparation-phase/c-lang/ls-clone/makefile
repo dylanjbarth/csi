@@ -10,11 +10,6 @@ build: clean
 	gcc -g -o $(PROGRAM) ls-clone.c
 
 run: build build-tests
-	echo "Running without arguments"
-	./$(PROGRAM)
-	echo "Running with .."
-	./$(PROGRAM) ..
-	echo "Running against test dir"
 	./$(PROGRAM) test
 
 debug: build
@@ -23,8 +18,8 @@ debug: build
 build-tests: clean-tests
 	mkdir test
 	# Create a bunch of files.
-	nfiles=1 ; while [[ $$nfiles -le 50 ]]; do \
-		echo "Test $$nfiles" > test/$$nfiles.txt; \
+	nfiles=1 ; while [[ $$nfiles -le 5 ]]; do \
+		echo "Test $$nfiles" > test/testfile$$nfiles.txt; \
 		((nfiles = nfiles + 1)) ; \
 	done
 	# create a few more with interesting permissions or file lengths.

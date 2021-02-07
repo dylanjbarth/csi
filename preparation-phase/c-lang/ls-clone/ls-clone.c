@@ -7,7 +7,7 @@
 #include <unistd.h>
 
 #define PROGRAM "ls-clone"
-#define MINCOLBUFFER 2
+#define COLGUTTER 2
 #define MAX_DIRENT 65535  // https://stackoverflow.com/a/466596 ?
 #define MAX_FILENAME 1024 // meh https://www.systutorials.com/maximum-allowed-file-path-length-for-c-programming-on-linux/
 
@@ -16,14 +16,19 @@ struct dirfile
   char filename[MAX_FILENAME];
   struct stat s;
 };
-struct dirfile entries[MAX_DIRENT];
+struct dirfile *entries[MAX_DIRENT];
 
 int is_file(struct stat *f);
 int is_dir(struct stat *f);
 void print_dir_or_file(char *s);
 void print_file(struct dirfile *d, int colsize);
 void print_dir(char *dir);
-int make_dirfile(char *filename, struct dirfile *df);
+int make_dirfile(char *filename, char *fullpath, struct dirfile *df);
+void shift_entries(int idx, int curr_len);
+void insert_to_entries(struct dirfile *f, int entries_len, int (*fn)(struct dirfile *df1, struct dirfile *df2));
+int entries_bin_search(int low, int high, struct dirfile *f, int (*compare)(struct dirfile *df1, struct dirfile *df2));
+int compare_lexagraphic(struct dirfile *df1, struct dirfile *df2);
+
 int win_cols;
 
 int main(int argc, char *argv[])
@@ -57,7 +62,7 @@ void print_dir_or_file(char *dir_or_file)
   else if (is_file(&statbuf))
   {
     struct dirfile *f = (struct dirfile *)malloc(sizeof(struct dirfile));
-    int access = make_dirfile(dir_or_file, f);
+    int access = make_dirfile(dir_or_file, dir_or_file, f);
     print_file(f, win_cols);
     free(f);
   }
@@ -71,9 +76,9 @@ void print_dir_or_file(char *dir_or_file)
   }
 }
 
-int make_dirfile(char *filename, struct dirfile *df)
+int make_dirfile(char *filename, char *full_path, struct dirfile *df)
 {
-  int stat_result = stat(filename, &df->s);
+  int stat_result = stat(full_path, &df->s);
   if (stat_result == -1)
   {
     fprintf(stderr, "Unable to access %s.\n", filename);
@@ -123,7 +128,10 @@ void print_dir(char *dir)
     char *fmt = dir[-1] == '/' ? "%s%s" : "%s/%s";
     char *full_path = (char *)malloc(sizeof(dir) + sizeof(fmt) + sizeof(dp->d_name));
     sprintf(full_path, fmt, dir, dp->d_name);
-    make_dirfile(full_path, &entries[idx]);
+    // Insert into sorted array
+    struct dirfile *f = (struct dirfile *)malloc(sizeof(struct dirfile));
+    make_dirfile(dp->d_name, full_path, f);
+    insert_to_entries(f, idx, compare_lexagraphic);
     free(full_path);
     int f_len = strlen(dp->d_name);
     if (longest < f_len)
@@ -132,11 +140,11 @@ void print_dir(char *dir)
     }
     idx++;
   }
-  int col_size = longest + MINCOLBUFFER;
+  int col_size = longest + COLGUTTER;
   int n_cols = win_cols / col_size;
   for (size_t i = 0; i < idx; i++)
   {
-    print_file(&entries[i], col_size);
+    print_file(entries[i], col_size);
     if (i % n_cols == 0)
     {
       fprintf(stdout, "\n");
@@ -145,9 +153,51 @@ void print_dir(char *dir)
   closedir(dirfd);
 }
 
+void insert_to_entries(struct dirfile *f, int entries_len, int (*strategy)(struct dirfile *df1, struct dirfile *df2))
+{
+  // basically just insertion sort here, since we can expect a pretty small dataset based on dirsize max.
+  // null case
+  if (entries_len == 0)
+  {
+    entries[entries_len] = f;
+    return;
+  }
+  int idx = 0;
+  // Search until the end of the list OR we find a place where the previous value is less than current is equal to or greater than.
+  while (idx < entries_len && !(strategy(f, entries[idx - 1]) < 0 && strategy(f, entries[idx]) >= 0))
+  {
+    idx++;
+  }
+  if (idx < entries_len)
+  {
+    shift_entries(idx, entries_len);
+  }
+  entries[idx] = f;
+}
+
+int compare_lexagraphic(struct dirfile *df1, struct dirfile *df2)
+{
+  int res = strcmp(df2->filename, df1->filename);
+  return res;
+}
+
+void shift_entries(int idx, int curr_len)
+{
+  for (size_t i = curr_len; i >= idx; i--)
+  {
+    entries[i] = entries[i - 1];
+  }
+}
+
 /*
   Next steps: 
 
   - determine column size of the terminal window AND determine max length of a filename.
   - sort in lexagraphical order
+  - add support for varioous flags, some goals
+  -- add a -h flag even though ls doesn't come with one, to substitute the man entry
+  -- 1 / C
+  -- a 
+  -- c / S   
+  -- i
 */
