@@ -105,6 +105,7 @@ void print_file(struct dirfile *d)
 
 void print_dir(char *dir)
 {
+  int idx = 0;
   DIR *dirfd;
   struct dirent *dp;
   if ((dirfd = opendir(dir)) == NULL)
@@ -114,13 +115,14 @@ void print_dir(char *dir)
   }
   while ((dp = readdir(dirfd)) != NULL)
   {
-    char *full_path;
     char *fmt = dir[-1] == '/' ? "%s%s" : "%s/%s";
+    char *full_path = (char *)malloc(sizeof(dir) + sizeof(fmt) + sizeof(dp->d_name));
     sprintf(full_path, fmt, dir, dp->d_name);
     struct dirfile *d = (struct dirfile *)malloc(sizeof(struct dirfile));
     make_dirfile(full_path, d);
     print_file(d);
     free(d);
+    idx++;
   }
   closedir(dirfd);
 }
