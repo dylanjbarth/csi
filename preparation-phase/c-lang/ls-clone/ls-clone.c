@@ -5,6 +5,7 @@
 #include <sys/stat.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
+#include <math.h>
 
 #define PROGRAM "ls-clone"
 #define COLGUTTER 5
@@ -16,6 +17,7 @@
 #define FLAG_LINES '1'   //  (The numeric digit ``one''.)  Force output to be one entry per line.  This is the default when output is not to a terminal.
 #define FLAG_LONG 'l'    // (The lowercase letter ``ell''.)  List in long format.  (See below.)  A total sum for all the file sizes is output on a line before the long listing.
 #define FLAG_ALL 'a'     // Include directory entries whose names begin with a dot (.)
+#define FLAG_NO_SORT 'f' // Output is not sorted.  This option turns on the -a option.
 
 struct dirfile
 {
@@ -33,6 +35,7 @@ int make_dirfile(char *filename, char *fullpath, struct dirfile *df);
 void shift_entries(int idx, int curr_len);
 void insert_to_entries(struct dirfile *f, int entries_len, int (*fn)(struct dirfile *df1, struct dirfile *df2));
 int entries_bin_search(int low, int high, struct dirfile *f, int (*compare)(struct dirfile *df1, struct dirfile *df2));
+int no_op(struct dirfile *df1, struct dirfile *df2);
 int compare_lexagraphic(struct dirfile *df1, struct dirfile *df2);
 int parse_flags(char *arg);
 
@@ -49,6 +52,7 @@ enum format_opts
 // Force output to be one entry per line.  This is the default when output is not to a terminal.
 enum format_opts format = lines;
 int flag_all = 0;
+int flag_no_sort = 0;
 
 int main(int argc, char *argv[])
 {
@@ -158,7 +162,7 @@ void print_dir(char *dir)
       // Insert into sorted array
       struct dirfile *f = (struct dirfile *)malloc(sizeof(struct dirfile));
       make_dirfile(dp->d_name, full_path, f);
-      insert_to_entries(f, idx, compare_lexagraphic);
+      insert_to_entries(f, idx, flag_no_sort ? no_op : compare_lexagraphic);
       free(full_path);
       int f_len = strlen(dp->d_name);
       if (longest < f_len)
@@ -170,14 +174,19 @@ void print_dir(char *dir)
   }
   int col_size = longest + COLGUTTER;
   int n_cols = win_cols / col_size;
-  int n_rows = idx / n_cols;
+  int n_rows = ceil(idx / (double)n_cols);
   if (format == columns)
   {
     for (size_t row = 0; row < n_rows; row++)
     {
       for (size_t col = 0; col < n_cols; col++)
       {
-        print_file(entries[(n_rows * col) + row], col_size);
+        int entry_idx = (n_rows * col) + row;
+        if (entry_idx >= idx)
+        {
+          break;
+        }
+        print_file(entries[entry_idx], col_size);
       }
       fprintf(stdout, "\n");
     }
@@ -225,6 +234,12 @@ int compare_lexagraphic(struct dirfile *df1, struct dirfile *df2)
   return res;
 }
 
+int no_op(struct dirfile *df1, struct dirfile *df2)
+{
+  // No-op is just a pass through
+  return 1;
+}
+
 void shift_entries(int idx, int curr_len)
 {
   for (size_t i = curr_len; i >= idx; i--)
@@ -253,6 +268,11 @@ int parse_flags(char *arg)
         break;
       case FLAG_ALL:
         flag_all = 1;
+        break;
+      case FLAG_NO_SORT:
+        // Output is not sorted.  This option turns on the -a option.
+        flag_all = 1;
+        flag_no_sort = 1;
         break;
       default:
         fprintf(stderr, "Unrecognized flag %c.\n", arg[i]);

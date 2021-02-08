@@ -16,6 +16,8 @@ test: build build-tests
 	./$(PROGRAM) -C test
 	./$(PROGRAM) -1 test
 	./$(PROGRAM) -1a test
+	./$(PROGRAM) -f test
+	./$(PROGRAM) -f1 test
 
 debug: build
 	lldb ./$(PROGRAM)
