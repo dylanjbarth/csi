@@ -9,8 +9,13 @@ clean-tests:
 build: clean
 	gcc -g -o $(PROGRAM) ls-clone.c
 
-run: build build-tests
-	./$(PROGRAM) -a test
+test: build build-tests
+	./$(PROGRAM) .
+	./$(PROGRAM) test
+	./$(PROGRAM) -Ca test
+	./$(PROGRAM) -C test
+	./$(PROGRAM) -1 test
+	./$(PROGRAM) -1a test
 
 debug: build
 	lldb ./$(PROGRAM)

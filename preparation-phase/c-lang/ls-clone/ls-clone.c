@@ -37,7 +37,6 @@ int compare_lexagraphic(struct dirfile *df1, struct dirfile *df2);
 int parse_flags(char *arg);
 
 // Formatting globals
-int istty;
 int win_cols;
 
 // Flag globals
@@ -47,7 +46,8 @@ enum format_opts
   lines,
   lines_long
 };
-enum format_opts format;
+// Force output to be one entry per line.  This is the default when output is not to a terminal.
+enum format_opts format = lines;
 int flag_all = 0;
 
 int main(int argc, char *argv[])
@@ -56,8 +56,10 @@ int main(int argc, char *argv[])
   struct winsize w;
   ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
   win_cols = w.ws_col;
-  // determine if terminal
-  istty = isatty(fileno(stdout));
+  if (isatty(fileno(stdout))) // Force multi-column output; this is the default when output is to a terminal.
+  {
+    format = columns;
+  };
   if (argc > 1)
   {
     while (--argc > 0)
@@ -169,13 +171,28 @@ void print_dir(char *dir)
   int col_size = longest + COLGUTTER;
   int n_cols = win_cols / col_size;
   int n_rows = idx / n_cols;
-  for (size_t row = 0; row < n_rows; row++)
+  if (format == columns)
   {
-    for (size_t col = 0; col < n_cols; col++)
+    for (size_t row = 0; row < n_rows; row++)
     {
-      print_file(entries[(n_rows * col) + row], col_size);
+      for (size_t col = 0; col < n_cols; col++)
+      {
+        print_file(entries[(n_rows * col) + row], col_size);
+      }
+      fprintf(stdout, "\n");
     }
-    fprintf(stdout, "\n");
+  }
+  else if (format == lines)
+  {
+    for (size_t i = 0; i < idx; i++)
+    {
+      print_file(entries[i], col_size);
+      fprintf(stdout, "\n");
+    }
+  }
+  else if (format == lines_long)
+  {
+    fprintf(stdout, "TODO add support for long format\n.");
   }
   closedir(dirfd);
 }
