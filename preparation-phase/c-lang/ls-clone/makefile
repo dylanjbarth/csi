@@ -18,6 +18,8 @@ test: build build-tests
 	./$(PROGRAM) -1a test
 	./$(PROGRAM) -f test
 	./$(PROGRAM) -f1 test
+	./$(PROGRAM) -S1a test
+	./$(PROGRAM) -Sa test
 
 debug: build
 	lldb ./$(PROGRAM)
@@ -34,5 +36,7 @@ build-tests: clean-tests
 	touch test/global_all.txt && chmod 0777 test/global_all.txt
 	touch test/user_read.txt && chmod 0400 test/user_read.txt
 	touch test/group_read.txt && chmod 0740 test/group_read.txt
+	echo "A bit biggggggggggggggggger" > test/bigfile.txt
+	echo "A bit smaller" > test/smallfile.txt
 	# test another directory
 	mkdir test/another_dir

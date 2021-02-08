@@ -13,11 +13,12 @@
 #define MAX_FILENAME 1024 // meh https://www.systutorials.com/maximum-allowed-file-path-length-for-c-programming-on-linux/
 
 // The -1, -C, -x, and -l options all override each other; the last one specified determines the format used.
-#define FLAG_COLUMNS 'C' // Force multi-column output; this is the default when output is to a terminal.
-#define FLAG_LINES '1'   //  (The numeric digit ``one''.)  Force output to be one entry per line.  This is the default when output is not to a terminal.
-#define FLAG_LONG 'l'    // (The lowercase letter ``ell''.)  List in long format.  (See below.)  A total sum for all the file sizes is output on a line before the long listing.
-#define FLAG_ALL 'a'     // Include directory entries whose names begin with a dot (.)
-#define FLAG_NO_SORT 'f' // Output is not sorted.  This option turns on the -a option.
+#define FLAG_COLUMNS 'C'   // Force multi-column output; this is the default when output is to a terminal.
+#define FLAG_LINES '1'     //  (The numeric digit ``one''.)  Force output to be one entry per line.  This is the default when output is not to a terminal.
+#define FLAG_LONG 'l'      // (The lowercase letter ``ell''.)  List in long format.  (See below.)  A total sum for all the file sizes is output on a line before the long listing.
+#define FLAG_ALL 'a'       // Include directory entries whose names begin with a dot (.)
+#define FLAG_NO_SORT 'f'   // Output is not sorted.  This option turns on the -a option.
+#define FLAG_SORT_SIZE 'S' // Sort files by size
 
 struct dirfile
 {
@@ -37,6 +38,7 @@ void insert_to_entries(struct dirfile *f, int entries_len, int (*fn)(struct dirf
 int entries_bin_search(int low, int high, struct dirfile *f, int (*compare)(struct dirfile *df1, struct dirfile *df2));
 int no_op(struct dirfile *df1, struct dirfile *df2);
 int compare_lexagraphic(struct dirfile *df1, struct dirfile *df2);
+int compare_size(struct dirfile *df1, struct dirfile *df2);
 int parse_flags(char *arg);
 
 // Formatting globals
@@ -51,8 +53,15 @@ enum format_opts
 };
 // Force output to be one entry per line.  This is the default when output is not to a terminal.
 enum format_opts format = lines;
+enum sort_opts
+{
+  lexagraphic,
+  none,
+  size
+};
+// Force output to be one entry per line.  This is the default when output is not to a terminal.
+enum sort_opts sort = lexagraphic;
 int flag_all = 0;
-int flag_no_sort = 0;
 
 int main(int argc, char *argv[])
 {
@@ -162,7 +171,8 @@ void print_dir(char *dir)
       // Insert into sorted array
       struct dirfile *f = (struct dirfile *)malloc(sizeof(struct dirfile));
       make_dirfile(dp->d_name, full_path, f);
-      insert_to_entries(f, idx, flag_no_sort ? no_op : compare_lexagraphic);
+      insert_to_entries(f, idx, sort == lexagraphic ? compare_lexagraphic : sort == size ? compare_size
+                                                                                         : no_op);
       free(full_path);
       int f_len = strlen(dp->d_name);
       if (longest < f_len)
@@ -234,6 +244,11 @@ int compare_lexagraphic(struct dirfile *df1, struct dirfile *df2)
   return res;
 }
 
+int compare_size(struct dirfile *df1, struct dirfile *df2)
+{
+  return df1->s.st_size - df2->s.st_size;
+}
+
 int no_op(struct dirfile *df1, struct dirfile *df2)
 {
   // No-op is just a pass through
@@ -272,7 +287,10 @@ int parse_flags(char *arg)
       case FLAG_NO_SORT:
         // Output is not sorted.  This option turns on the -a option.
         flag_all = 1;
-        flag_no_sort = 1;
+        sort = none;
+        break;
+      case FLAG_SORT_SIZE:
+        sort = size;
         break;
       default:
         fprintf(stderr, "Unrecognized flag %c.\n", arg[i]);
