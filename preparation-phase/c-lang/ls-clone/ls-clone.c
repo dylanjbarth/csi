@@ -11,6 +11,12 @@
 #define MAX_DIRENT 65535  // https://stackoverflow.com/a/466596 ?
 #define MAX_FILENAME 1024 // meh https://www.systutorials.com/maximum-allowed-file-path-length-for-c-programming-on-linux/
 
+// The -1, -C, -x, and -l options all override each other; the last one specified determines the format used.
+#define FLAG_COLUMNS 'C' // Force multi-column output; this is the default when output is to a terminal.
+#define FLAG_LINES '1'   //  (The numeric digit ``one''.)  Force output to be one entry per line.  This is the default when output is not to a terminal.
+#define FLAG_LONG 'l'    // (The lowercase letter ``ell''.)  List in long format.  (See below.)  A total sum for all the file sizes is output on a line before the long listing.
+#define FLAG_ALL 'a'     // Include directory entries whose names begin with a dot (.)
+
 struct dirfile
 {
   char filename[MAX_FILENAME];
@@ -28,9 +34,21 @@ void shift_entries(int idx, int curr_len);
 void insert_to_entries(struct dirfile *f, int entries_len, int (*fn)(struct dirfile *df1, struct dirfile *df2));
 int entries_bin_search(int low, int high, struct dirfile *f, int (*compare)(struct dirfile *df1, struct dirfile *df2));
 int compare_lexagraphic(struct dirfile *df1, struct dirfile *df2);
+int parse_flags(char *arg);
 
+// Formatting globals
 int istty;
 int win_cols;
+
+// Flag globals
+enum format_opts
+{
+  columns,
+  lines,
+  lines_long
+};
+enum format_opts format;
+int flag_all = 0;
 
 int main(int argc, char *argv[])
 {
@@ -45,7 +63,10 @@ int main(int argc, char *argv[])
     while (--argc > 0)
     {
       char *cur_arg = *++argv;
-      print_dir_or_file(cur_arg);
+      if (!parse_flags(cur_arg))
+      {
+        print_dir_or_file(cur_arg);
+      };
     }
   }
   else
@@ -103,8 +124,6 @@ int is_dir(struct stat *f)
 
 void print_file(struct dirfile *d, int colsize)
 {
-  // Assume regular mode
-  // fprintf(stdout, "%" COLWIDTH "s", name);
   fprintf(stdout, "%s", d->filename);
   for (size_t i = strlen(d->filename); i < colsize; i++)
   {
@@ -128,20 +147,24 @@ void print_dir(char *dir)
   int idx = 0, longest = 0;
   while ((dp = readdir(dirfd)) != NULL)
   {
-    char *fmt = dir[-1] == '/' ? "%s%s" : "%s/%s";
-    char *full_path = (char *)malloc(sizeof(dir) + sizeof(fmt) + sizeof(dp->d_name));
-    sprintf(full_path, fmt, dir, dp->d_name);
-    // Insert into sorted array
-    struct dirfile *f = (struct dirfile *)malloc(sizeof(struct dirfile));
-    make_dirfile(dp->d_name, full_path, f);
-    insert_to_entries(f, idx, compare_lexagraphic);
-    free(full_path);
-    int f_len = strlen(dp->d_name);
-    if (longest < f_len)
+    // Skip if hidden unless all is set.
+    if (dp->d_name[0] != '.' || flag_all)
     {
-      longest = f_len;
+      char *fmt = dir[-1] == '/' ? "%s%s" : "%s/%s";
+      char *full_path = (char *)malloc(sizeof(dir) + sizeof(fmt) + sizeof(dp->d_name));
+      sprintf(full_path, fmt, dir, dp->d_name);
+      // Insert into sorted array
+      struct dirfile *f = (struct dirfile *)malloc(sizeof(struct dirfile));
+      make_dirfile(dp->d_name, full_path, f);
+      insert_to_entries(f, idx, compare_lexagraphic);
+      free(full_path);
+      int f_len = strlen(dp->d_name);
+      if (longest < f_len)
+      {
+        longest = f_len;
+      }
+      idx++;
     }
-    idx++;
   }
   int col_size = longest + COLGUTTER;
   int n_cols = win_cols / col_size;
@@ -191,6 +214,37 @@ void shift_entries(int idx, int curr_len)
   {
     entries[i] = entries[i - 1];
   }
+}
+
+// Return 1 if valid flag, 0 if not flag.
+int parse_flags(char *arg)
+{
+  if (arg[0] == '-')
+  {
+    for (size_t i = 1; i < strlen(arg); i++)
+    {
+      switch (arg[i])
+      {
+      case FLAG_COLUMNS:
+        format = columns;
+        break;
+      case FLAG_LINES:
+        format = lines;
+        break;
+      case FLAG_LONG:
+        format = lines_long;
+        break;
+      case FLAG_ALL:
+        flag_all = 1;
+        break;
+      default:
+        fprintf(stderr, "Unrecognized flag %c.\n", arg[i]);
+        break;
+      }
+    }
+    return 1;
+  }
+  return 0;
 }
 
 /*

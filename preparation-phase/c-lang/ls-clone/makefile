@@ -10,7 +10,7 @@ build: clean
 	gcc -g -o $(PROGRAM) ls-clone.c
 
 run: build build-tests
-	./$(PROGRAM) test
+	./$(PROGRAM) -a test
 
 debug: build
 	lldb ./$(PROGRAM)
