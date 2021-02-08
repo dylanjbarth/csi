@@ -29,6 +29,7 @@ void insert_to_entries(struct dirfile *f, int entries_len, int (*fn)(struct dirf
 int entries_bin_search(int low, int high, struct dirfile *f, int (*compare)(struct dirfile *df1, struct dirfile *df2));
 int compare_lexagraphic(struct dirfile *df1, struct dirfile *df2);
 
+int istty;
 int win_cols;
 
 int main(int argc, char *argv[])
@@ -37,6 +38,8 @@ int main(int argc, char *argv[])
   struct winsize w;
   ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
   win_cols = w.ws_col;
+  // determine if terminal
+  istty = isatty(fileno(stdout));
   if (argc > 1)
   {
     while (--argc > 0)
@@ -196,7 +199,7 @@ void shift_entries(int idx, int curr_len)
   - determine column size of the terminal window AND determine max length of a filename.
   - sort in lexagraphical order
   - add support for varioous flags, some goals
-  -- add a -h flag even though ls doesn't come with one, to substitute the man entry
+  -- usability idea: add a -h flag even though ls doesn't come with one, to substitute the man entry
   -- 1 / C
   -- a 
   -- c / S   
