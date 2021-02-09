@@ -2,6 +2,10 @@
 
 `make build` -> `ls-clone.out`
 
+`make test` -> runs tests comparing the output of clone to the real `ls`
+
+`make debug` -> drop into an lldb debugger session
+
 ## Supported flags
 
 * `-C`: Force multi-column output; this is the default when output is to a terminal.
