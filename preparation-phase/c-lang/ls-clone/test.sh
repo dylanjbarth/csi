@@ -13,7 +13,7 @@ mkdir -p $TEST_DATA_DIR
 mkdir -p $TEST_CASES_DIR
 
 # Create a bunch of files.
-for i in {1..5}
+for i in {1..500}
 do
   echo "Test contents $i" > $TEST_DATA_DIR/testfile-$i.txt;
 done
@@ -39,7 +39,7 @@ echo "Case: no args"
 ls $TEST_DATA_DIR > $TEST_CASES_DIR/expected2.txt
 diff -b $TEST_CASES_DIR/out2.txt $TEST_CASES_DIR/expected2.txt
 
-# Fails
+# Fails because ls is sort of inconsistent.
 # echo "Case: test data dir - C flag"
 # ./$PROGRAM -C $TEST_DATA_DIR > $TEST_CASES_DIR/out3.txt
 # ls -C $TEST_DATA_DIR > $TEST_CASES_DIR/expected3.txt
@@ -61,10 +61,14 @@ diff -b $TEST_CASES_DIR/out5.txt $TEST_CASES_DIR/expected5.txt
 # ls -f $TEST_DATA_DIR > $TEST_CASES_DIR/expected5.txt
 # diff -b $TEST_CASES_DIR/out5.txt $TEST_CASES_DIR/expected5.txt
 
-# Fails
 echo "Case: -S flag"
 ./$PROGRAM -S $TEST_DATA_DIR > $TEST_CASES_DIR/out6.txt
 ls -S $TEST_DATA_DIR > $TEST_CASES_DIR/expected6.txt
 diff -b $TEST_CASES_DIR/out6.txt $TEST_CASES_DIR/expected6.txt
+
+echo "Case: -Sa flag"
+./$PROGRAM -Sa $TEST_DATA_DIR > $TEST_CASES_DIR/out7.txt
+ls -Sa $TEST_DATA_DIR > $TEST_CASES_DIR/expected7.txt
+diff -b $TEST_CASES_DIR/out7.txt $TEST_CASES_DIR/expected7.txt
 
 # TODO test some flag combinations

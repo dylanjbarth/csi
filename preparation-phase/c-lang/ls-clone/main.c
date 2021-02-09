@@ -49,6 +49,45 @@ int main(int argc, char *argv[])
   }
 }
 
+// Return 1 if valid flag, 0 if not flag.
+int parse_flags(char *arg)
+{
+  if (arg[0] == '-')
+  {
+    for (size_t i = 1; i < strlen(arg); i++)
+    {
+      switch (arg[i])
+      {
+      case FLAG_COLUMNS:
+        format = columns;
+        break;
+      case FLAG_LINES:
+        format = lines;
+        break;
+      case FLAG_LONG:
+        format = lines_long;
+        break;
+      case FLAG_ALL:
+        flag_all = 1;
+        break;
+      case FLAG_NO_SORT:
+        // Output is not sorted.  This option turns on the -a option.
+        flag_all = 1;
+        sort = none;
+        break;
+      case FLAG_SORT_SIZE:
+        sort = size;
+        break;
+      default:
+        fprintf(stderr, "Unrecognized flag %c.\n", arg[i]);
+        break;
+      }
+    }
+    return 1;
+  }
+  return 0;
+}
+
 void print_dir_or_file(char *dir_or_file)
 {
   struct stat statbuf;
@@ -217,43 +256,4 @@ void insert_to_entries(struct dirfile *f, int entries_len, sort_strategy strateg
   // {
   //   printf("%s %lld\n", entries[i]->filename, entries[i]->s.st_size);
   // }
-}
-
-// Return 1 if valid flag, 0 if not flag.
-int parse_flags(char *arg)
-{
-  if (arg[0] == '-')
-  {
-    for (size_t i = 1; i < strlen(arg); i++)
-    {
-      switch (arg[i])
-      {
-      case FLAG_COLUMNS:
-        format = columns;
-        break;
-      case FLAG_LINES:
-        format = lines;
-        break;
-      case FLAG_LONG:
-        format = lines_long;
-        break;
-      case FLAG_ALL:
-        flag_all = 1;
-        break;
-      case FLAG_NO_SORT:
-        // Output is not sorted.  This option turns on the -a option.
-        flag_all = 1;
-        sort = none;
-        break;
-      case FLAG_SORT_SIZE:
-        sort = size;
-        break;
-      default:
-        fprintf(stderr, "Unrecognized flag %c.\n", arg[i]);
-        break;
-      }
-    }
-    return 1;
-  }
-  return 0;
 }
