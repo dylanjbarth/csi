@@ -7,7 +7,7 @@ clean-tests:
 	rm -rf test
 
 build: clean
-	gcc -g -o $(PROGRAM) ls-clone.c
+	gcc -g ls-clone.c -o $(PROGRAM) 
 
 test: build build-tests
 	./$(PROGRAM) .
