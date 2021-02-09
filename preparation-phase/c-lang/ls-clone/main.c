@@ -183,11 +183,13 @@ void insert_to_entries(struct dirfile *f, int entries_len, sort_strategy strateg
   }
   int idx = 0;
   // Search until we find a place where the previous value is less than and current is equal to or greater than OR the end of the list.
+  // printf("Searching for place to insert %s\n", f->filename);
   while (idx < entries_len)
   {
     int check_curr = (*strategy)(f, entries[idx]);
     if (idx == 0 && check_curr >= 0)
     {
+      // printf("Inserting at beginning of array %s\n", f->filename);
       break;
     }
     else if (idx > 0)
@@ -208,7 +210,13 @@ void insert_to_entries(struct dirfile *f, int entries_len, sort_strategy strateg
       entries[i] = entries[i - 1];
     }
   }
+  // printf("Inserting at %d\n", idx);
   entries[idx] = f;
+  // printf("Printing entries after insert:\n");
+  // for (size_t i = 0; i < entries_len + 1; i++)
+  // {
+  //   printf("%s %lld\n", entries[i]->filename, entries[i]->s.st_size);
+  // }
 }
 
 // Return 1 if valid flag, 0 if not flag.

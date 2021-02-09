@@ -62,9 +62,9 @@ diff -b $TEST_CASES_DIR/out5.txt $TEST_CASES_DIR/expected5.txt
 # diff -b $TEST_CASES_DIR/out5.txt $TEST_CASES_DIR/expected5.txt
 
 # Fails
-# echo "Case: -S flag"
-# ./$PROGRAM -S $TEST_DATA_DIR > $TEST_CASES_DIR/out6.txt
-# ls -S $TEST_DATA_DIR > $TEST_CASES_DIR/expected6.txt
-# diff -b $TEST_CASES_DIR/out6.txt $TEST_CASES_DIR/expected6.txt
+echo "Case: -S flag"
+./$PROGRAM -S $TEST_DATA_DIR > $TEST_CASES_DIR/out6.txt
+ls -S $TEST_DATA_DIR > $TEST_CASES_DIR/expected6.txt
+diff -b $TEST_CASES_DIR/out6.txt $TEST_CASES_DIR/expected6.txt
 
 # TODO test some flag combinations
