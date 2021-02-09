@@ -27,7 +27,7 @@ int main(int argc, char *argv[])
   // Grab window size
   struct winsize w;
   ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
-  win_cols = w.ws_col;
+  win_cols = w.ws_col == 0 ? COL_DEFAULT : w.ws_col;
   if (isatty(fileno(stdout))) // Force multi-column output; this is the default when output is to a terminal.
   {
     format = columns;
@@ -181,7 +181,7 @@ void insert_to_entries(struct dirfile *f, int entries_len, int (*strategy)(struc
     return;
   }
   int idx = 1;
-  // Search until the end of the list OR we find a place where the previous value is less than current is equal to or greater than.
+  // Search until we find a place where the previous value is less than and current is equal to or greater than OR the end of the list.
   while (idx < entries_len && !(strategy(f, entries[idx - 1]) < 0 && strategy(f, entries[idx]) >= 0))
   {
     idx++;

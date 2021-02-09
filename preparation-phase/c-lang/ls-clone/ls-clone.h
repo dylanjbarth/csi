@@ -8,7 +8,8 @@
 #include <math.h>
 
 #define PROGRAM "ls-clone"
-#define COLGUTTER 5
+#define COL_DEFAULT 272 // because window size is 0 when piping :)
+#define COL_GUTTER 5
 #define MAX_DIRENT 65535  // https://stackoverflow.com/a/466596 ?
 #define MAX_FILENAME 1024 // meh https://www.systutorials.com/maximum-allowed-file-path-length-for-c-programming-on-linux/
 
