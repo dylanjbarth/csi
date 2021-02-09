@@ -126,8 +126,9 @@ void print_dir(char *dir)
       // Insert into sorted array
       struct dirfile *f = (struct dirfile *)malloc(sizeof(struct dirfile));
       make_dirfile(dp->d_name, full_path, f);
-      insert_to_entries(f, idx, sort == lexagraphic ? sort_lexagraphic : sort == size ? sort_size
-                                                                                      : sort_no_op);
+      sort_strategy sorter = sort == lexagraphic ? &sort_lexagraphic : sort == size ? &sort_size
+                                                                                    : &sort_no_op;
+      insert_to_entries(f, idx, sorter);
       free(full_path);
       int f_len = strlen(dp->d_name);
       if (longest < f_len)
@@ -171,7 +172,7 @@ void print_dir(char *dir)
   closedir(dirfd);
 }
 
-void insert_to_entries(struct dirfile *f, int entries_len, int (*strategy)(struct dirfile *df1, struct dirfile *df2))
+void insert_to_entries(struct dirfile *f, int entries_len, sort_strategy strategy)
 {
   // basically just insertion sort here, since we can expect a pretty small dataset based on dirsize max.
   // null case
@@ -184,14 +185,14 @@ void insert_to_entries(struct dirfile *f, int entries_len, int (*strategy)(struc
   // Search until we find a place where the previous value is less than and current is equal to or greater than OR the end of the list.
   while (idx < entries_len)
   {
-    int check_curr = strategy(f, entries[idx]);
+    int check_curr = (*strategy)(f, entries[idx]);
     if (idx == 0 && check_curr >= 0)
     {
       break;
     }
     else if (idx > 0)
     {
-      int check_back = strategy(f, entries[idx - 1]);
+      int check_back = (*strategy)(f, entries[idx - 1]);
       if (check_back < 0 && check_curr >= 0)
       {
         break;
