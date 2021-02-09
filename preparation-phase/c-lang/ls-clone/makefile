@@ -7,7 +7,7 @@ clean-tests:
 	rm -rf test
 
 build: clean
-	gcc -g main.c -o $(PROGRAM) 
+	gcc -g main.c sorting.c -o $(PROGRAM) 
 
 test: build build-tests
 	./$(PROGRAM) .

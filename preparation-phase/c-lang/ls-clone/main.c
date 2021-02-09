@@ -103,10 +103,6 @@ void print_file(struct dirfile *d, int colsize)
   {
     fprintf(stdout, " ");
   }
-  // fprintf(stdout, "Mode %u\n", st->st_mode);
-  // fprintf(stdout, "User ID %u\n", st->st_uid);
-  // fprintf(stdout, "Group ID %u\n", st->st_gid);
-  // fprintf(stdout, "File Size %lld\n", st->st_size);
 }
 
 void print_dir(char *dir)
@@ -130,8 +126,8 @@ void print_dir(char *dir)
       // Insert into sorted array
       struct dirfile *f = (struct dirfile *)malloc(sizeof(struct dirfile));
       make_dirfile(dp->d_name, full_path, f);
-      insert_to_entries(f, idx, sort == lexagraphic ? compare_lexagraphic : sort == size ? compare_size
-                                                                                         : no_op);
+      insert_to_entries(f, idx, sort == lexagraphic ? sort_lexagraphic : sort == size ? sort_size
+                                                                                      : sort_no_op);
       free(full_path);
       int f_len = strlen(dp->d_name);
       if (longest < f_len)
@@ -192,34 +188,12 @@ void insert_to_entries(struct dirfile *f, int entries_len, int (*strategy)(struc
   }
   if (idx < entries_len)
   {
-    shift_entries(idx, entries_len);
+    for (size_t i = entries_len; i >= idx; i--)
+    {
+      entries[i] = entries[i - 1];
+    }
   }
   entries[idx] = f;
-}
-
-int compare_lexagraphic(struct dirfile *df1, struct dirfile *df2)
-{
-  int res = strcmp(df2->filename, df1->filename);
-  return res;
-}
-
-int compare_size(struct dirfile *df1, struct dirfile *df2)
-{
-  return df1->s.st_size - df2->s.st_size;
-}
-
-int no_op(struct dirfile *df1, struct dirfile *df2)
-{
-  // No-op is just a pass through
-  return 1;
-}
-
-void shift_entries(int idx, int curr_len)
-{
-  for (size_t i = curr_len; i >= idx; i--)
-  {
-    entries[i] = entries[i - 1];
-  }
 }
 
 // Return 1 if valid flag, 0 if not flag.
@@ -260,16 +234,3 @@ int parse_flags(char *arg)
   }
   return 0;
 }
-
-/*
-  Next steps: 
-
-  - determine column size of the terminal window AND determine max length of a filename.
-  - sort in lexagraphical order
-  - add support for varioous flags, some goals
-  -- usability idea: add a -h flag even though ls doesn't come with one, to substitute the man entry
-  -- 1 / C
-  -- a 
-  -- c / S   
-  -- i
-*/
