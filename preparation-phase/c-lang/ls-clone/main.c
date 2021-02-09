@@ -1,26 +1,21 @@
 #include "ls-clone.h"
 
-// Formatting globals
-int win_cols;
-
-// Flag globals
 enum format_opts
 {
   columns,
   lines,
   lines_long
 };
-// Force output to be one entry per line.  This is the default when output is not to a terminal.
-enum format_opts format = lines;
+enum format_opts format = lines; // Force output to be one entry per line.  This is the default when output is not to a terminal.
 enum sort_opts
 {
   lexagraphic,
   none,
   size
 };
-// Force output to be one entry per line.  This is the default when output is not to a terminal.
-enum sort_opts sort = lexagraphic;
+enum sort_opts sort = lexagraphic; // Default sort without flags is lexagraphic
 int flag_all = 0;
+int win_cols;
 
 int main(int argc, char *argv[])
 {
