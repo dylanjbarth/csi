@@ -137,7 +137,7 @@ void print_dir(char *dir)
       idx++;
     }
   }
-  int col_size = longest + COLGUTTER;
+  int col_size = longest + COL_GUTTER;
   int n_cols = win_cols / col_size;
   int n_rows = ceil(idx / (double)n_cols);
   if (format == columns)
@@ -180,15 +180,29 @@ void insert_to_entries(struct dirfile *f, int entries_len, int (*strategy)(struc
     entries[entries_len] = f;
     return;
   }
-  int idx = 1;
+  int idx = 0;
   // Search until we find a place where the previous value is less than and current is equal to or greater than OR the end of the list.
-  while (idx < entries_len && !(strategy(f, entries[idx - 1]) < 0 && strategy(f, entries[idx]) >= 0))
+  while (idx < entries_len)
   {
+    int check_curr = strategy(f, entries[idx]);
+    if (idx == 0 && check_curr >= 0)
+    {
+      break;
+    }
+    else if (idx > 0)
+    {
+      int check_back = strategy(f, entries[idx - 1]);
+      if (check_back < 0 && check_curr >= 0)
+      {
+        break;
+      }
+    }
     idx++;
   }
+  // Need to shift if inserting into middle of array.
   if (idx < entries_len)
   {
-    for (size_t i = entries_len; i >= idx; i--)
+    for (size_t i = entries_len; i > idx; i--)
     {
       entries[i] = entries[i - 1];
     }
