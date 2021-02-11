@@ -3,3 +3,5 @@
 *.dSYM
 *.vscode*
 preparation-phase/c-lang/ls-clone/test
+preparation-phase/golang/code/src/gopl.io
+preparation-phase/golang/code/bin
