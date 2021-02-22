@@ -1,4 +1,4 @@
-package main
+package extract
 
 import (
 	"encoding/json"
@@ -16,6 +16,13 @@ const urlTemp = "https://xkcd.com/%d/info.0.json"
 const rateLimit = 300 * time.Millisecond
 const datadir = "raw_data"
 
+// ReadAllExhaustedError returned by ReadAll generator when completed.
+type ReadAllExhaustedError struct{}
+
+func (e *ReadAllExhaustedError) Error() string {
+	return fmt.Sprintf("Extract finished")
+}
+
 func init() {
 	path := fullDatadir()
 	if _, err := os.Stat(path); os.IsNotExist(err) {
@@ -29,8 +36,7 @@ func init() {
 func main() {
 	// create data directory.
 	// cache each comic description in a single json file by it's ID.
-	// naively fetch starting from 1 until we get an error (assumes no missing comics) and we stop when we hit our first 404.
-	// TODO don't cache if already exists unless force flag is passed.
+	// naively fetch starting from 1 until we get 3 errors (because num 404 returns a 404 😂 but isn't the last one.)
 	fails := 0
 	for i := 1; ; i++ {
 		if cached(i) {
@@ -91,6 +97,38 @@ func write(comic *types.Comic) {
 	log.Printf("Writing comic metadata to disk => %s\n", fullpath)
 	if err = ioutil.WriteFile(fullpath, b, 0600); err != nil {
 		log.Fatalf("Failed to write file: %s", err)
+	}
+}
+
+// Read returns the comic with the num specified.
+func Read(path string) (types.Comic, error) {
+	bytes, err := ioutil.ReadFile(path)
+	var comic types.Comic
+	if err != nil {
+		return comic, err
+	}
+	err = json.Unmarshal(bytes, &comic)
+	if err != nil {
+		return comic, err
+	}
+	return comic, err
+}
+
+// ReadAll returns an generator that will return all the comics in the raw data cache one at a time
+func ReadAll() func() (types.Comic, error) {
+	d, err := ioutil.ReadDir(fullDatadir())
+	if err != nil {
+		log.Fatalf("Failed to read raw data dir. %s", err)
+	}
+	i := 0
+	return func() (types.Comic, error) {
+		var comic types.Comic
+		if i >= len(d) {
+			return comic, new(ReadAllExhaustedError)
+		}
+		path := filepath.Join(fullDatadir(), d[i].Name())
+		i++
+		return Read(path)
 	}
 }
 
