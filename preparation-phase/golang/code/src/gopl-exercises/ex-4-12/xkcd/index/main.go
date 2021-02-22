@@ -59,7 +59,7 @@ func IndexFp() string {
 
 // clean removes punctuation, lower cases everything, etc from the string
 func clean(s string) string {
-	return cleanreg.ReplaceAllString(s, "")
+	return strings.ToLower(cleanreg.ReplaceAllString(s, ""))
 }
 
 // tokenize returns a slice of strings from a comic's transcript and alt tags
