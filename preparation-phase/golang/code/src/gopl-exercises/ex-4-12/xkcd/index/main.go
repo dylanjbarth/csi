@@ -15,9 +15,11 @@ import (
 
 const indexfn = "comic_index.json"
 const cleaner = "[^a-zA-Z0-9]+"
+const space = `[\n\r\s]+`
 
 var pwd string
 var cleanreg *regexp.Regexp
+var spacereg *regexp.Regexp
 
 func init() {
 	var err error
@@ -25,11 +27,8 @@ func init() {
 	if err != nil {
 		log.Fatalf("Failed to fetch pwd %s", err)
 	}
-
-	cleanreg, err = regexp.Compile(cleaner)
-	if err != nil {
-		log.Fatalf("Failed to compile regex %s", err)
-	}
+	cleanreg = regexp.MustCompile(cleaner)
+	spacereg = regexp.MustCompile(space)
 }
 
 func main() {
@@ -52,8 +51,8 @@ func main() {
 	fmt.Println(index)
 }
 
-// IndexFp returns the os safe absolute path to the index file
-func IndexFp() string {
+// Fp returns the os safe absolute path to the index file
+func Fp() string {
 	return filepath.Join(pwd, indexfn)
 }
 
@@ -64,11 +63,18 @@ func clean(s string) string {
 
 // tokenize returns a slice of strings from a comic's transcript and alt tags
 func tokenize(c *types.Comic) []string {
-	words := strings.Split(c.Title, " ")
-	for i, w := range words {
-		words[i] = clean(w)
+	// Cleaner way to express this in Go? Eg iterate through each attribute we care about?
+	words := append(spacereg.Split(c.Title, -1), spacereg.Split(c.Transcript, -1)...)
+	words = append(words, spacereg.Split(c.Alt, -1)...)
+	words = append(words, spacereg.Split(c.Year, -1)...)
+	var cleanedWords []string
+	for _, w := range words {
+		cleaned := clean(w)
+		if cleaned != "" {
+			cleanedWords = append(cleanedWords, cleaned)
+		}
 	}
-	return words
+	return cleanedWords
 }
 
 func addToIndex(c *types.Comic, idx *types.ComicIndex) {
