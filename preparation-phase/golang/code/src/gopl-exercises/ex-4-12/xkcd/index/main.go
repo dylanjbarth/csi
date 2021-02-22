@@ -1,6 +1,6 @@
 // Creates a comic search index using the raw_data
 // Keeping it simple and building a hash table where each unique word links to a comic num and the frequency count.
-package main
+package index
 
 import (
 	"fmt"
@@ -9,17 +9,26 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strings"
 )
 
 const indexfn = "comic_index.json"
+const cleaner = "[^a-zA-Z0-9]+"
 
 var pwd string
+var cleanreg *regexp.Regexp
 
 func init() {
 	var err error
 	pwd, err = os.Getwd()
 	if err != nil {
 		log.Fatalf("Failed to fetch pwd %s", err)
+	}
+
+	cleanreg, err = regexp.Compile(cleaner)
+	if err != nil {
+		log.Fatalf("Failed to compile regex %s", err)
 	}
 }
 
@@ -49,15 +58,20 @@ func IndexFp() string {
 }
 
 // clean removes punctuation, lower cases everything, etc from the string
-func clean(s string) {
-
+func clean(s string) string {
+	return cleanreg.ReplaceAllString(s, "")
 }
 
 // tokenize returns a slice of strings from a comic's transcript and alt tags
-func tokenize(c *types.Comic) {
-
+func tokenize(c *types.Comic) []string {
+	words := strings.Split(c.Title, " ")
+	for i, w := range words {
+		words[i] = clean(w)
+	}
+	return words
 }
 
 func addToIndex(c *types.Comic, idx *types.ComicIndex) {
-	fmt.Printf("Adding %s to index\n", c)
+	tokens := tokenize(c)
+	fmt.Println(tokens)
 }
