@@ -1,11 +1,12 @@
 // Creates a comic search index using the raw_data
 // Keeping it simple and building a hash table where each unique word links to a comic num and the frequency count.
-package index
+package main
 
 import (
-	"fmt"
+	"encoding/json"
 	"gopl-exercises/ex-4-12/xkcd/extract"
 	"gopl-exercises/ex-4-12/xkcd/types"
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -47,13 +48,23 @@ func main() {
 		}
 		break
 	}
-	// write it to disk```
-	fmt.Println(index)
+	write(&index)
 }
 
 // Fp returns the os safe absolute path to the index file
 func Fp() string {
 	return filepath.Join(pwd, indexfn)
+}
+
+func write(i *types.ComicIndex) {
+	b, err := json.Marshal(&i)
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Printf("Writing comic index to disk => %s\n", Fp())
+	if err = ioutil.WriteFile(Fp(), b, 0600); err != nil {
+		log.Fatalf("Failed to write file: %s", err)
+	}
 }
 
 // clean removes punctuation, lower cases everything, etc from the string

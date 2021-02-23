@@ -1,4 +1,4 @@
-package index
+package main
 
 import (
 	"gopl-exercises/ex-4-12/xkcd/types"
