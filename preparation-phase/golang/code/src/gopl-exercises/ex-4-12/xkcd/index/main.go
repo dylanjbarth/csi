@@ -33,7 +33,7 @@ func init() {
 
 func main() {
 	comicGen := extract.ReadAll()
-	var index types.ComicIndex
+	index := make(types.ComicIndex)
 	for {
 		raw, err := comicGen()
 		switch err.(type) {
@@ -79,5 +79,17 @@ func tokenize(c *types.Comic) []string {
 
 func addToIndex(c *types.Comic, idx *types.ComicIndex) {
 	tokens := tokenize(c)
-	fmt.Println(tokens)
+	for _, t := range tokens {
+		// We already have a base entry for this comic and word pair
+		if _, ok := (*idx)[t]; !ok {
+			(*idx)[t] = map[int]int{c.Num: 1}
+		} else {
+			// check if found already in this comic
+			if _, exists := (*idx)[t][c.Num]; !exists {
+				(*idx)[t][c.Num] = 1
+			} else {
+				(*idx)[t][c.Num]++
+			}
+		}
+	}
 }

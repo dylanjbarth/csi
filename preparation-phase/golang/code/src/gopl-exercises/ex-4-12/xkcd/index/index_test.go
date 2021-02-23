@@ -46,10 +46,80 @@ func TestTokenize(t *testing.T) {
 		res := tokenize(&c.input)
 		if len(res) != len(c.expected) {
 			t.Errorf("Expected len(tokenize(%v)) == %d but got %d. Result was %v", c.input, len(c.expected), len(res), res)
+		} else {
+			for i, tok := range res {
+				if tok != c.expected[i] {
+					t.Errorf("Expected token at %d to equal %s but got %s", i, c.expected[i], tok)
+				}
+			}
 		}
-		for i, tok := range res {
-			if tok != c.expected[i] {
-				t.Errorf("Expected token at %d to equal %s but got %s", i, c.expected[i], tok)
+	}
+}
+
+func TestAddToIndex(t *testing.T) {
+	type testCase struct {
+		input    []types.Comic
+		expected types.ComicIndex
+	}
+
+	cases := []testCase{
+		{[]types.Comic{{
+			Month:      "1",
+			Num:        1,
+			Link:       "",
+			Year:       "2006",
+			News:       "",
+			SafeTitle:  "Barrel - Part 1",
+			Transcript: "Barrel barrel barrel",
+			Alt:        "Don't we all.",
+			Img:        "https://imgs.xkcd.com/comics/barrel_cropped_(1).jpg",
+			Title:      "Barrel - Part 1",
+			Day:        "1",
+		}, {
+			Month:      "1",
+			Num:        2,
+			Link:       "",
+			Year:       "2006",
+			News:       "",
+			SafeTitle:  "Barrel - Part 1",
+			Transcript: "Barrel barrel floating ocean.",
+			Alt:        "",
+			Img:        "https://imgs.xkcd.com/comics/barrel_cropped_(1).jpg",
+			Title:      "Barrel - Part 1",
+			Day:        "1",
+		}}, types.ComicIndex{"1": {2: 1, 1: 1},
+			"2006":     {1: 1, 2: 1},
+			"all":      {1: 1},
+			"barrel":   {1: 4, 2: 3},
+			"dont":     {1: 1},
+			"floating": {2: 1},
+			"ocean":    {2: 1},
+			"part":     {1: 1, 2: 1},
+			"we":       {1: 1},
+		}}}
+	for _, c := range cases {
+		idx := make(types.ComicIndex)
+		for _, com := range c.input {
+			addToIndex(&com, &idx)
+		}
+		if len(idx) != len(c.expected) {
+			t.Errorf("Expected len(idx) == %d but got %d. Result was %v", len(c.expected), len(idx), idx)
+		} else {
+			for k, idxv := range idx {
+				if ev, ok := c.expected[k]; !ok {
+					t.Errorf("Unexpected token '%s' found in index.", k)
+				} else {
+					if len(idxv) != len(ev) {
+						t.Errorf("Expected len(idx[%s]) == %d but got %d. Result was %v", k, len(c.expected[k]), len(idx[k]), idx[k])
+					}
+					for kk, idxvv := range idxv {
+						if evv, ok := ev[kk]; !ok {
+							t.Errorf("Unexpected comic id '%d' found under token '%s' in index.", kk, k)
+						} else if evv != idxvv {
+							t.Errorf("Expected count of token '%s' for comic id %d to equal %d but got %d.", k, kk, evv, idxvv)
+						}
+					}
+				}
 			}
 		}
 	}
