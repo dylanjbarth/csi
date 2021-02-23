@@ -35,6 +35,7 @@ func init() {
 func main() {
 	comicGen := extract.ReadAll()
 	index := make(types.ComicIndex)
+	count := 0
 	for {
 		raw, err := comicGen()
 		switch err.(type) {
@@ -42,12 +43,14 @@ func main() {
 			break
 		case nil:
 			addToIndex(&raw, &index)
+			count++
 			continue
 		default:
 			log.Fatalf("Unexpected error reading commics. %s", err)
 		}
 		break
 	}
+	log.Printf("Processed %d comics.", count)
 	write(&index)
 }
 
