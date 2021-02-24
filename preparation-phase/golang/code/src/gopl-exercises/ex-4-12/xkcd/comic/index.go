@@ -44,6 +44,19 @@ func CreateIndex() {
 	index.write()
 }
 
+func loadIndex() *SearchIndex {
+	b, err := ioutil.ReadFile(indexPath())
+	if err != nil {
+		log.Fatalf("Unable to read comic search index from disk. %s", err)
+	}
+	i := make(SearchIndex)
+	jErr := json.Unmarshal(b, &i)
+	if jErr != nil {
+		log.Fatalf("Unable to unmarshall json of comic search index from disk. Could be corrupted. %s", jErr)
+	}
+	return &i
+}
+
 // indexPath returns the os safe absolute path to the index file
 func indexPath() string {
 	p, err := filepath.Abs(filepath.Join(".", indexfn))

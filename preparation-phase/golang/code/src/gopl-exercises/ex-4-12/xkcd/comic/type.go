@@ -19,7 +19,7 @@ type Comic struct {
 }
 
 func (c *Comic) String() string {
-	return fmt.Sprintf("Comic Num %d", c.Num)
+	return fmt.Sprintf("Title: %s\nTranscript: %s\nURL: https://xkcd.com/%d/\n", c.SafeTitle, c.Transcript, c.Num)
 }
 
 // SearchIndex is a hash table mapping keywords to comics containing them (and the frequency count)

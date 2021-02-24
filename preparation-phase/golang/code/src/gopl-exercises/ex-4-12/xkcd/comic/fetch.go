@@ -70,6 +70,10 @@ func read(path string) (Comic, error) {
 	return comic, err
 }
 
+func readByID(id int) (Comic, error) {
+	return read(filepath.Join(fullDatadir(), fname(id)))
+}
+
 func readAll() func() (Comic, error) {
 	d, err := ioutil.ReadDir(fullDatadir())
 	if err != nil {
