@@ -1,9 +1,8 @@
-package extract
+package comic
 
 import (
 	"encoding/json"
 	"fmt"
-	"gopl-exercises/ex-4-12/xkcd/types"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -16,10 +15,9 @@ const urlTemp = "https://xkcd.com/%d/info.0.json"
 const rateLimit = 300 * time.Millisecond
 const datadir = "raw_data"
 
-// ReadAllExhaustedError returned by ReadAll generator when completed.
-type ReadAllExhaustedError struct{}
+type readAllExhaustedError struct{}
 
-func (e *ReadAllExhaustedError) Error() string {
+func (e *readAllExhaustedError) Error() string {
 	return fmt.Sprintf("Extract finished")
 }
 
@@ -31,15 +29,15 @@ func init() {
 	}
 }
 
-// Extracts comic descriptions from xkcd.com to build an offline index.
+// FetchAll extracts all comic descriptions from xkcd.com and writes each one to disk.
 // Will not run if data is already cached unless a force flag is passed.
-func main() {
+func FetchAll(force bool) {
 	// create data directory.
 	// cache each comic description in a single json file by it's ID.
 	// naively fetch starting from 1 until we get 3 errors (because num 404 returns a 404 😂 but isn't the last one.)
 	fails := 0
 	for i := 1; ; i++ {
-		if cached(i) {
+		if cached(i) && !force {
 			log.Printf("Skipping %d because it's already cached locally.\n", i)
 			continue
 		}
@@ -54,14 +52,44 @@ func main() {
 			}
 			continue
 		}
-		write(&comic)
+		comic.write()
 		time.Sleep(rateLimit)
 	}
 }
 
+func read(path string) (Comic, error) {
+	bytes, err := ioutil.ReadFile(path)
+	var comic Comic
+	if err != nil {
+		return comic, err
+	}
+	err = json.Unmarshal(bytes, &comic)
+	if err != nil {
+		return comic, err
+	}
+	return comic, err
+}
+
+func readAll() func() (Comic, error) {
+	d, err := ioutil.ReadDir(fullDatadir())
+	if err != nil {
+		log.Fatalf("Failed to read raw data dir. %s", err)
+	}
+	i := 0
+	return func() (Comic, error) {
+		var comic Comic
+		if i >= len(d) {
+			return comic, new(readAllExhaustedError)
+		}
+		path := filepath.Join(fullDatadir(), d[i].Name())
+		i++
+		return read(path)
+	}
+}
+
 // fetch returns the json response of a comic or error
-func fetch(id int) (types.Comic, error) {
-	var comic types.Comic
+func fetch(id int) (Comic, error) {
+	var comic Comic
 	resp, err := http.Get(fmt.Sprintf(urlTemp, id))
 	if err != nil {
 		return comic, err
@@ -77,18 +105,18 @@ func fetch(id int) (types.Comic, error) {
 }
 
 func fullDatadir() string {
-	pwd, err := os.Getwd()
+	p, err := filepath.Abs(filepath.Join(".", datadir))
 	if err != nil {
-		log.Fatalf("Failed to fetch pwd %s", err)
+		log.Fatalf("Unable to produce data directory filepath. %s", err)
 	}
-	return filepath.Join(pwd, "..", datadir)
+	return p
 }
 
 func fname(id int) string {
 	return fmt.Sprintf("%d.json", id)
 }
 
-func write(comic *types.Comic) {
+func (comic *Comic) write() {
 	b, err := json.Marshal(comic)
 	if err != nil {
 		log.Fatal(err)
@@ -97,38 +125,6 @@ func write(comic *types.Comic) {
 	log.Printf("Writing comic metadata to disk => %s\n", fullpath)
 	if err = ioutil.WriteFile(fullpath, b, 0600); err != nil {
 		log.Fatalf("Failed to write file: %s", err)
-	}
-}
-
-// Read returns the comic with the num specified.
-func Read(path string) (types.Comic, error) {
-	bytes, err := ioutil.ReadFile(path)
-	var comic types.Comic
-	if err != nil {
-		return comic, err
-	}
-	err = json.Unmarshal(bytes, &comic)
-	if err != nil {
-		return comic, err
-	}
-	return comic, err
-}
-
-// ReadAll returns an generator that will return all the comics in the raw data cache one at a time
-func ReadAll() func() (types.Comic, error) {
-	d, err := ioutil.ReadDir(fullDatadir())
-	if err != nil {
-		log.Fatalf("Failed to read raw data dir. %s", err)
-	}
-	i := 0
-	return func() (types.Comic, error) {
-		var comic types.Comic
-		if i >= len(d) {
-			return comic, new(ReadAllExhaustedError)
-		}
-		path := filepath.Join(fullDatadir(), d[i].Name())
-		i++
-		return Read(path)
 	}
 }
 

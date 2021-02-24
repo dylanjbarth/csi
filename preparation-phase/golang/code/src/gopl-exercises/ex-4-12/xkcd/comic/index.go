@@ -1,14 +1,9 @@
-// Creates a comic search index using the raw_data
-// Keeping it simple and building a hash table where each unique word links to a comic num and the frequency count.
-package main
+package comic
 
 import (
 	"encoding/json"
-	"gopl-exercises/ex-4-12/xkcd/extract"
-	"gopl-exercises/ex-4-12/xkcd/types"
 	"io/ioutil"
 	"log"
-	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -18,31 +13,26 @@ const indexfn = "comic_index.json"
 const cleaner = "[^a-zA-Z0-9]+"
 const space = `[\n\r\s]+`
 
-var pwd string
 var cleanreg *regexp.Regexp
 var spacereg *regexp.Regexp
 
 func init() {
-	var err error
-	pwd, err = os.Getwd()
-	if err != nil {
-		log.Fatalf("Failed to fetch pwd %s", err)
-	}
 	cleanreg = regexp.MustCompile(cleaner)
 	spacereg = regexp.MustCompile(space)
 }
 
-func main() {
-	comicGen := extract.ReadAll()
-	index := make(types.ComicIndex)
+// CreateIndex builds a new search index
+func CreateIndex() {
+	comicGen := readAll()
+	index := make(SearchIndex)
 	count := 0
 	for {
 		raw, err := comicGen()
 		switch err.(type) {
-		case *extract.ReadAllExhaustedError:
+		case *readAllExhaustedError:
 			break
 		case nil:
-			addToIndex(&raw, &index)
+			index.add(&raw)
 			count++
 			continue
 		default:
@@ -51,21 +41,25 @@ func main() {
 		break
 	}
 	log.Printf("Processed %d comics.", count)
-	write(&index)
+	index.write()
 }
 
-// Fp returns the os safe absolute path to the index file
-func Fp() string {
-	return filepath.Join(pwd, indexfn)
+// indexPath returns the os safe absolute path to the index file
+func indexPath() string {
+	p, err := filepath.Abs(filepath.Join(".", indexfn))
+	if err != nil {
+		log.Fatalf("Unable to produce index filepath. %s", err)
+	}
+	return p
 }
 
-func write(i *types.ComicIndex) {
+func (i *SearchIndex) write() {
 	b, err := json.Marshal(&i)
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Printf("Writing comic index to disk => %s\n", Fp())
-	if err = ioutil.WriteFile(Fp(), b, 0600); err != nil {
+	log.Printf("Writing comic index to disk => %s\n", indexPath())
+	if err = ioutil.WriteFile(indexPath(), b, 0600); err != nil {
 		log.Fatalf("Failed to write file: %s", err)
 	}
 }
@@ -76,7 +70,7 @@ func clean(s string) string {
 }
 
 // tokenize returns a slice of strings from a comic's transcript and alt tags
-func tokenize(c *types.Comic) []string {
+func (c *Comic) tokenize() []string {
 	// Cleaner way to express this in Go? Eg iterate through each attribute we care about?
 	words := append(spacereg.Split(c.Title, -1), spacereg.Split(c.Transcript, -1)...)
 	words = append(words, spacereg.Split(c.Alt, -1)...)
@@ -91,18 +85,18 @@ func tokenize(c *types.Comic) []string {
 	return cleanedWords
 }
 
-func addToIndex(c *types.Comic, idx *types.ComicIndex) {
-	tokens := tokenize(c)
+func (i *SearchIndex) add(c *Comic) {
+	tokens := c.tokenize()
 	for _, t := range tokens {
 		// We already have a base entry for this comic and word pair
-		if _, ok := (*idx)[t]; !ok {
-			(*idx)[t] = map[int]int{c.Num: 1}
+		if _, ok := (*i)[t]; !ok {
+			(*i)[t] = map[int]int{c.Num: 1}
 		} else {
 			// check if found already in this comic
-			if _, exists := (*idx)[t][c.Num]; !exists {
-				(*idx)[t][c.Num] = 1
+			if _, exists := (*i)[t][c.Num]; !exists {
+				(*i)[t][c.Num] = 1
 			} else {
-				(*idx)[t][c.Num]++
+				(*i)[t][c.Num]++
 			}
 		}
 	}

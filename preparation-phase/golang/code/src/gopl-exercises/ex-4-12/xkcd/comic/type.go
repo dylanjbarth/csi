@@ -1,4 +1,5 @@
-package types
+// Package comic contains helpers for working with Comic and Index types.
+package comic
 
 import "fmt"
 
@@ -21,6 +22,6 @@ func (c *Comic) String() string {
 	return fmt.Sprintf("Comic Num %d", c.Num)
 }
 
-// ComicIndex is a hash table mapping keywords to comics containing them (and the frequency count)
+// SearchIndex is a hash table mapping keywords to comics containing them (and the frequency count)
 // Example { "river": { 1: 4, 5: 1}} => river appears in comic 1 four times and comic 5 one time.
-type ComicIndex map[string]map[int]int
+type SearchIndex map[string]map[int]int

@@ -1,7 +1,6 @@
-package main
+package comic
 
 import (
-	"gopl-exercises/ex-4-12/xkcd/types"
 	"testing"
 )
 
@@ -24,11 +23,11 @@ func TestClean(t *testing.T) {
 
 func TestTokenize(t *testing.T) {
 	type testCase struct {
-		input    types.Comic
+		input    Comic
 		expected []string
 	}
 	cases := []testCase{
-		{types.Comic{
+		{Comic{
 			Month:      "1",
 			Num:        1,
 			Link:       "",
@@ -43,7 +42,7 @@ func TestTokenize(t *testing.T) {
 		}, []string{"barrel", "part", "1", "a", "boy", "sits", "in", "a", "barrel", "which", "is", "floating", "in", "an", "ocean", "boy", "i", "wonder", "where", "ill", "float", "next", "the", "barrel", "drifts", "into", "the", "distance", "nothing", "else", "can", "be", "seen", "alt", "dont", "we", "all", "dont", "we", "all", "2006"},
 		}}
 	for _, c := range cases {
-		res := tokenize(&c.input)
+		res := c.input.tokenize()
 		if len(res) != len(c.expected) {
 			t.Errorf("Expected len(tokenize(%v)) == %d but got %d. Result was %v", c.input, len(c.expected), len(res), res)
 		} else {
@@ -58,12 +57,12 @@ func TestTokenize(t *testing.T) {
 
 func TestAddToIndex(t *testing.T) {
 	type testCase struct {
-		input    []types.Comic
-		expected types.ComicIndex
+		input    []Comic
+		expected SearchIndex
 	}
 
 	cases := []testCase{
-		{[]types.Comic{{
+		{[]Comic{{
 			Month:      "1",
 			Num:        1,
 			Link:       "",
@@ -87,7 +86,7 @@ func TestAddToIndex(t *testing.T) {
 			Img:        "https://imgs.xkcd.com/comics/barrel_cropped_(1).jpg",
 			Title:      "Barrel - Part 1",
 			Day:        "1",
-		}}, types.ComicIndex{"1": {2: 1, 1: 1},
+		}}, SearchIndex{"1": {2: 1, 1: 1},
 			"2006":     {1: 1, 2: 1},
 			"all":      {1: 1},
 			"barrel":   {1: 4, 2: 3},
@@ -98,9 +97,9 @@ func TestAddToIndex(t *testing.T) {
 			"we":       {1: 1},
 		}}}
 	for _, c := range cases {
-		idx := make(types.ComicIndex)
+		idx := make(SearchIndex)
 		for _, com := range c.input {
-			addToIndex(&com, &idx)
+			idx.add(&com)
 		}
 		if len(idx) != len(c.expected) {
 			t.Errorf("Expected len(idx) == %d but got %d. Result was %v", len(c.expected), len(idx), idx)
