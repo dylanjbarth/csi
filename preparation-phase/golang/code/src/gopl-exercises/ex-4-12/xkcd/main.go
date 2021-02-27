@@ -12,7 +12,7 @@ const maxDefault = 3
 var extract = flag.Bool("extract", false, "Pass the --extract switch to collect the raw data from xkcd.")
 var force = flag.Bool("force", false, "Pass the --force switch with extract to force collection of raw data, even if it's already cached.")
 var index = flag.Bool("index", false, "Pass the --index switch to rebuild the search index.")
-var max = flag.Int("max", maxDefault, fmt.Sprintf("Max results. Defaults to %d", maxDefault))
+var max = flag.Int("max", maxDefault, fmt.Sprintf("Max search results."))
 
 func main() {
 	flag.Parse()
@@ -29,7 +29,7 @@ func main() {
 			fmt.Println("No results found.")
 		} else {
 			for i, c := range cs {
-				if i >= *max-1 {
+				if i >= *max {
 					break
 				}
 				fmt.Printf("%v\n", c)
