@@ -5,7 +5,8 @@
 `make index` to create local search index.
 `make search` for an example search
 
-```$ go run main.go --help
+```
+$ go run main.go --help
 Usage of xkcd:
   -extract
     	Pass the --extract switch to collect the raw data from xkcd.
@@ -20,7 +21,8 @@ If no index or extract flags are passed, search is the default behavior.
 
 Example output: 
 
-```go run main.go "barrel"
+```
+$ go run main.go "barrel"
 Title: Barrel - Part 5
 Transcript: [[Boy floating on barrel in ocean]]
 [[Zoomed out view of boy floating on barrel in ocean]]
