@@ -1,9 +1,9 @@
 # Ex 4.12 - xkcd search tool
 
-`make extract` to download the raw comic data. 
-`make force-extract` to re-download comics even if already cached locally.
-`make index` to create local search index.
-`make search` for an example search
+* `make extract` to download the raw comic data. 
+* `make force-extract` to re-download comics even if already cached locally.
+* `make index` to create local search index.
+* `make search` for an example search
 
 ```
 $ go run main.go --help
