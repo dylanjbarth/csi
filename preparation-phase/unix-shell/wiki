@@ -29,28 +29,25 @@ fi
 # -L follows redirects on the search and -s prevents the progress bar
 res=$(curl -L -s "https://en.wikipedia.org/wiki/?search=$1")
 # Search within the Body HTML to find the first p tag that isn't within a table element.
-lineno=$(echo "$res" | grep -m 1 -n '<div class="mw-parser-output">' | cut -d : -f 1)
-echo "Starting lineno $lineno"
+lineno=$(echo "$res" | grep -m 1 -n '<div class="mw-parser-output">' | sed '/^$/d' | cut -d : -f 1)
 intable=false
 while true ;
 do
   line=$(sed "${lineno}q;d" <<< "$res")
-  echo "Lineno $lineno - line $line"
-  if [[ $line =~ .*"<table".* && $line =~ .*"</table>".* ]]; then
-    echo "Line $line - found <table> and </table>. Continue."
-  elif [[ $line =~ .*"<table".* ]]; then
-    echo "Line $line - found <table>. Setting intable to true." 
+  if [[ $line =~ .*"<table".* ]]; then
     intable=true
   elif [ $intable = true  ] && [[ $line =~ .*"</table>".* ]]; then
-    echo "Line $line - found </table>. Setting intable to false." 
     intable=false
   elif [ $intable = false ] && [[ $line =~ .*"<p>".* ]]; then
-    echo "Line $line - found <p>. Break!"
     break 
   fi
   ((lineno++))
-  echo "Incrementing lineno to $lineno. Intable is $intable"
 done
+
+# Strip off tags.
+echo "Our first paragraph is:"
+line=$(sed "${lineno}q;d" <<< "$res")
+echo "$line"
 
 # # Find the body content <div class="mw-parser-output">
 # bodyln=$(echo "$res" | grep -m 1 -n '<div class="mw-parser-output">' | cut -d : -f 1)
