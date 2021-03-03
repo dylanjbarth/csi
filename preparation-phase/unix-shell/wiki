@@ -1,0 +1,66 @@
+#!/bin/bash
+
+# Shows summary information from Wikipedia
+
+# parse arguments
+
+TERM=""
+SUBSECTION=""
+
+usage() {
+  echo "Usage: wiki SEARCHTERM [SUBSECTION]"
+  exit
+}
+
+if [ "$#" -lt 1 ]; then 
+  usage
+fi
+
+# ARG PARSING
+if [ -n "$1" ]; then
+  TERM=$1
+fi
+
+if [ -n "$2" ]; then
+  SUBSECTION=$2
+fi
+
+# Search for page in wikipedia
+# -L follows redirects on the search and -s prevents the progress bar
+res=$(curl -L -s "https://en.wikipedia.org/wiki/?search=$1")
+# Search within the Body HTML to find the first p tag that isn't within a table element.
+lineno=$(echo "$res" | grep -m 1 -n '<div class="mw-parser-output">' | cut -d : -f 1)
+echo "Starting lineno $lineno"
+intable=false
+while true ;
+do
+  line=$(sed "${lineno}q;d" <<< "$res")
+  echo "Lineno $lineno - line $line"
+  if [[ $line =~ .*"<table".* && $line =~ .*"</table>".* ]]; then
+    echo "Line $line - found <table> and </table>. Continue."
+  elif [[ $line =~ .*"<table".* ]]; then
+    echo "Line $line - found <table>. Setting intable to true." 
+    intable=true
+  elif [ $intable = true  ] && [[ $line =~ .*"</table>".* ]]; then
+    echo "Line $line - found </table>. Setting intable to false." 
+    intable=false
+  elif [ $intable = false ] && [[ $line =~ .*"<p>".* ]]; then
+    echo "Line $line - found <p>. Break!"
+    break 
+  fi
+  ((lineno++))
+  echo "Incrementing lineno to $lineno. Intable is $intable"
+done
+
+# # Find the body content <div class="mw-parser-output">
+# bodyln=$(echo "$res" | grep -m 1 -n '<div class="mw-parser-output">' | cut -d : -f 1)
+
+# echo "Body ln $bodyln"
+
+# # From there find the first clean paragraph
+# firstp=$(echo "$res" | tail -n +$bodyln | grep -m 1 '<p>')
+# echo $firstp
+# remove all newlines so we can process with grep
+# Paragraph regex 
+# search within body content for first unclassed paragraph tag
+# strip the paragraph tag of any html characters

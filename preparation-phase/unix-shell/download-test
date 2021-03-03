@@ -1,0 +1,16 @@
+#!/bin/bash
+
+# Script to quickly download sample wiki documents.
+
+mkdir -p ./test-data
+
+for _ in {1..50} 
+do 
+  rand=$(curl -s -w "%{redirect_url}" https://en.wikipedia.org/wiki/Special:Random)
+  fn=$(awk -F '/' '{print $5}' <<< "$rand")
+  path="./test-data/$fn.html"
+  echo "Downloading $rand => $path"
+  curl -L -s "$rand" > "$path"
+done;
+
+
