@@ -28,6 +28,7 @@ fi
 # Search for page in wikipedia
 # -L follows redirects on the search and -s prevents the progress bar
 res=$(curl -L -s "https://en.wikipedia.org/wiki/?search=$1")
+
 # Search within the Body HTML to find the first p tag that isn't within a table element.
 lineno=$(echo "$res" | grep -m 1 -n '<div class="mw-parser-output">' | sed '/^$/d' | cut -d : -f 1)
 intable=false
@@ -47,17 +48,8 @@ done
 # Strip off tags.
 echo "Our first paragraph is:"
 line=$(sed "${lineno}q;d" <<< "$res")
-echo "$line"
 
-# # Find the body content <div class="mw-parser-output">
-# bodyln=$(echo "$res" | grep -m 1 -n '<div class="mw-parser-output">' | cut -d : -f 1)
+# Strip out HTML tags with Sed
+sed -e 's/<[^>]*>//g' <<< "$line"
 
-# echo "Body ln $bodyln"
-
-# # From there find the first clean paragraph
-# firstp=$(echo "$res" | tail -n +$bodyln | grep -m 1 '<p>')
-# echo $firstp
-# remove all newlines so we can process with grep
-# Paragraph regex 
-# search within body content for first unclassed paragraph tag
-# strip the paragraph tag of any html characters
+# Get the subsections beneath our current lineno
