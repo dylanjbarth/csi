@@ -46,10 +46,16 @@ do
 done
 
 # Strip off tags.
-echo "Our first paragraph is:"
+echo "First paragraph:"
 line=$(sed "${lineno}q;d" <<< "$res")
 
-# Strip out HTML tags with Sed
+# Print first paragraph
 sed -e 's/<[^>]*>//g' <<< "$line"
 
+# Print any h2s
+echo "Headers:"
+tail -n "+${lineno}" <<< "$res" | grep '<h2><span class="mw-headline"' | sed -e 's/<[^>]*>//g' | sed -e 's/\[edit\]//g'
+
 # Get the subsections beneath our current lineno
+
+# TODO convert HTML escape coded characters to ascii
