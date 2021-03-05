@@ -12,40 +12,6 @@ usage() {
   exit
 }
 
-# Returns line number of first paragraph of Wikipedia page or section.
-# first argument must be the HTML to search through. 
-# optional second argument is line number to start search.
-firstp() {
-  lineno=$2
-  intable=false
-  if [ -z "$lineno" ]; then 
-    lineno="0"
-  fi
-  while true ;
-  do
-    line=$(sed "${lineno}q;d" <<< "$1")
-    if [[ $line =~ .*"<table".* ]]; then
-      intable=true
-    elif [ $intable = true  ] && [[ $line =~ .*"</table>".* ]]; then
-      intable=false
-    elif [ $intable = false ] && [[ $line =~ .*"<p>".* ]]; then
-      break 
-    fi
-    ((lineno++))
-  done
-  return "$lineno"
-}
-
-# Return text at line number $1 of text body $2
-getline() {
-  return "$(sed "${1}q;d" <<< "$2")"
-}
-
-# Strip HTML Tags from text $1
-getline() {
-  return "$(sed -e 's/<[^>]*>//g' <<< "$1")"
-}
-
 if [ "$#" -lt 1 ]; then 
   usage
 fi
@@ -66,52 +32,66 @@ resultpage=$(curl -Lfs -w "%{url_effective}" -o /dev/null "https://en.wikipedia.
 # -L follows redirects on the search and -s prevents the progress bar
 res=$(curl -L -s "$resultpage")
 # res=$(cat ./test-data/Stefano_Bianchini.html)
-# Search within the Body HTML to find the first p tag that isn't within a table element.
-lineno=$(echo "$res" | grep -m 1 -n '<div class="mw-parser-output">' | sed '/^$/d' | cut -d : -f 1)
-intable=false
-while true ;
-do
-  line=$(sed "${lineno}q;d" <<< "$res")
-  if [[ $line =~ .*"<table".* ]]; then
-    intable=true
-  elif [ $intable = true  ] && [[ $line =~ .*"</table>".* ]]; then
-    intable=false
-  elif [ $intable = false ] && [[ $line =~ .*"<p>".* ]]; then
-    break 
-  fi
-  ((lineno++))
-done
 
-printf "\nYou searched for \'%s\'.\n" "$TERM"
 
+printf "\nYou searched for \'%s\'" "$TERM"
+if [ -n "$SUBSECTION" ]; then 
+  printf " \'%s\'.\n" "$SUBSECTION"
+else
+  printf "\n"
+fi
 printf "Found this wiki page: \'%s\'.\n" "$resultpage"
 
-# Strip off tags.
-printf "\nFirst paragraph:\n\n"
-line=$(sed "${lineno}q;d" <<< "$res")
+if [ -z "$SUBSECTION" ]; then 
+  # Search within the Body HTML to find the first p tag that isn't within a table element.
+  lineno=$(echo "$res" | grep -m 1 -n '<div class="mw-parser-output">' | sed '/^$/d' | cut -d : -f 1)
+  intable=false
+  while true ;
+  do
+    line=$(sed "${lineno}q;d" <<< "$res")
+    if [[ $line =~ .*"<table".* ]]; then
+      intable=true
+    elif [ $intable = true  ] && [[ $line =~ .*"</table>".* ]]; then
+      intable=false
+    elif [ $intable = false ] && [[ $line =~ .*"<p>".* ]]; then
+      break 
+    fi
+    ((lineno++))
+  done  
+  printf "\nFirst paragraph:\n\n"
+  line=$(sed "${lineno}q;d" <<< "$res")
+  sed -e 's/<[^>]*>//g' <<< "$line"
 
-# Print first paragraph
-sed -e 's/<[^>]*>//g' <<< "$line"
-
-# Print any h2s
-printf "\nSections:\n\n"
-# Get all header line nums
-sectionsbody=$(tail -n "+${lineno}" <<< "$res")
-IFS=$'\n' headerarr=($(echo "$sectionsbody" | grep -n '<h.><span class="mw-headline"' | cut -d : -f 1))
-for n in "${headerarr[@]}"
-do
-  ln=$(sed "${n}q;d" <<< "$sectionsbody")
-  indent=""
-  if [[ $ln =~ .*"<h3".* ]]; then 
-    indent="  "
-  elif [[ $ln =~ .*"<h4".* ]]; then 
-    indent="    "
-  elif [[ $ln =~ .*"<h5".* ]]; then 
-    indent="      "
-  elif [[ $ln =~ .*"<h6".* ]]; then 
-    indent="        "
+  # Print any headers
+  printf "\nSections:\n\n"
+  # Get all header line nums
+  sectionsbody=$(tail -n "+${lineno}" <<< "$res")
+  IFS=$'\n' headerarr=($(echo "$sectionsbody" | grep -n '<h.><span class="mw-headline"' | cut -d : -f 1))
+  for n in "${headerarr[@]}"
+  do
+    ln=$(sed "${n}q;d" <<< "$sectionsbody")
+    indent=""
+    if [[ $ln =~ .*"<h3".* ]]; then 
+      indent="  "
+    elif [[ $ln =~ .*"<h4".* ]]; then 
+      indent="    "
+    elif [[ $ln =~ .*"<h5".* ]]; then 
+      indent="      "
+    elif [[ $ln =~ .*"<h6".* ]]; then 
+      indent="        "
+    fi
+    echo "$indent$ln" | sed -e 's/<[^>]*>//g' | sed -e 's/\[edit\]//g'
+  done
+else 
+  # Attempt to locate subsection requested
+  sectionln=$(grep -in "<h.><span class=\"mw-headline\".*${SUBSECTION}" <<< "$res" | cut -d : -f 1)
+  if [ -n "$sectionln" ]; then 
+    echo "Found section on $sectionln"
+    
+  else 
+    echo "Couldn't find section '$SUBSECTION'."
   fi
-  echo "$indent$ln" | sed -e 's/<[^>]*>//g' | sed -e 's/\[edit\]//g'
-done
+fi
 
 # TODO convert HTML escape coded characters to ascii
+# TODO handle 404s or missing subsections
