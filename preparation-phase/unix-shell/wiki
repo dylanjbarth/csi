@@ -12,6 +12,40 @@ usage() {
   exit
 }
 
+# Returns line number of first paragraph of Wikipedia page or section.
+# first argument must be the HTML to search through. 
+# optional second argument is line number to start search.
+firstp() {
+  lineno=$2
+  intable=false
+  if [ -z "$lineno" ]; then 
+    lineno="0"
+  fi
+  while true ;
+  do
+    line=$(sed "${lineno}q;d" <<< "$1")
+    if [[ $line =~ .*"<table".* ]]; then
+      intable=true
+    elif [ $intable = true  ] && [[ $line =~ .*"</table>".* ]]; then
+      intable=false
+    elif [ $intable = false ] && [[ $line =~ .*"<p>".* ]]; then
+      break 
+    fi
+    ((lineno++))
+  done
+  return "$lineno"
+}
+
+# Return text at line number $1 of text body $2
+getline() {
+  return "$(sed "${1}q;d" <<< "$2")"
+}
+
+# Strip HTML Tags from text $1
+getline() {
+  return "$(sed -e 's/<[^>]*>//g' <<< "$1")"
+}
+
 if [ "$#" -lt 1 ]; then 
   usage
 fi
@@ -26,9 +60,12 @@ if [ -n "$2" ]; then
 fi
 
 # Search for page in wikipedia
+# -w "%{url_effective}" outputs the redirected URL so we can store it and use it later.
+# TODO is there a way to get this without downloading page twice? Could write it to disk instead I guess...
+resultpage=$(curl -Lfs -w "%{url_effective}" -o /dev/null "https://en.wikipedia.org/wiki/?search=$1")
 # -L follows redirects on the search and -s prevents the progress bar
-res=$(curl -L -s "https://en.wikipedia.org/wiki/?search=$1")
-
+res=$(curl -L -s "$resultpage")
+# res=$(cat ./test-data/Stefano_Bianchini.html)
 # Search within the Body HTML to find the first p tag that isn't within a table element.
 lineno=$(echo "$res" | grep -m 1 -n '<div class="mw-parser-output">' | sed '/^$/d' | cut -d : -f 1)
 intable=false
@@ -45,17 +82,36 @@ do
   ((lineno++))
 done
 
+printf "\nYou searched for \'%s\'.\n" "$TERM"
+
+printf "Found this wiki page: \'%s\'.\n" "$resultpage"
+
 # Strip off tags.
-echo "First paragraph:"
+printf "\nFirst paragraph:\n\n"
 line=$(sed "${lineno}q;d" <<< "$res")
 
 # Print first paragraph
 sed -e 's/<[^>]*>//g' <<< "$line"
 
 # Print any h2s
-echo "Headers:"
-tail -n "+${lineno}" <<< "$res" | grep '<h2><span class="mw-headline"' | sed -e 's/<[^>]*>//g' | sed -e 's/\[edit\]//g'
-
-# Get the subsections beneath our current lineno
+printf "\nSections:\n\n"
+# Get all header line nums
+sectionsbody=$(tail -n "+${lineno}" <<< "$res")
+IFS=$'\n' headerarr=($(echo "$sectionsbody" | grep -n '<h.><span class="mw-headline"' | cut -d : -f 1))
+for n in "${headerarr[@]}"
+do
+  ln=$(sed "${n}q;d" <<< "$sectionsbody")
+  indent=""
+  if [[ $ln =~ .*"<h3".* ]]; then 
+    indent="  "
+  elif [[ $ln =~ .*"<h4".* ]]; then 
+    indent="    "
+  elif [[ $ln =~ .*"<h5".* ]]; then 
+    indent="      "
+  elif [[ $ln =~ .*"<h6".* ]]; then 
+    indent="        "
+  fi
+  echo "$indent$ln" | sed -e 's/<[^>]*>//g' | sed -e 's/\[edit\]//g'
+done
 
 # TODO convert HTML escape coded characters to ascii
