@@ -94,6 +94,7 @@ else
     # echo "Found section on $sectionln"
     sectionh=$(sed "${sectionln}q;d" <<< "$RESP")
     pline=$(grep -m 1 '<p>' <<< "$(tail -n +"${sectionln}" <<< "$RESP")")
+    echo ""
     sed -e 's/<[^>]*>//g' <<< "$sectionh"
     sed -e 's/<[^>]*>//g' <<< "$pline"
   else 
