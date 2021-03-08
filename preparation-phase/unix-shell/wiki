@@ -6,10 +6,35 @@
 
 TERM=""
 SUBSECTION=""
+RESP=""
 
 usage() {
   echo "Usage: wiki SEARCHTERM [SUBSECTION]"
   exit
+}
+
+print_sections() {
+  # Print any headers
+  printf "\nSections:\n\n"
+  # Get all header line nums
+  IFS=$'\n' headerarr=($(echo "$RESP" | grep -n '<h.><span.*class="mw-headline"' | cut -d : -f 1))
+  for n in "${headerarr[@]}"
+  do
+    ln=$(sed "${n}q;d" <<< "$RESP")
+    indent=""
+    if [[ $ln =~ .*"<h2".* ]]; then 
+      indent=""
+    elif [[ $ln =~ .*"<h3".* ]]; then 
+      indent="  "
+    elif [[ $ln =~ .*"<h4".* ]]; then 
+      indent="    "
+    elif [[ $ln =~ .*"<h5".* ]]; then 
+      indent="      "
+    elif [[ $ln =~ .*"<h6".* ]]; then 
+      indent="        "
+    fi
+    echo "$indent$ln" | sed -e 's/<[^>]*>//g' | sed -e 's/\[edit\]//g'
+  done
 }
 
 if [ "$#" -lt 1 ]; then 
@@ -30,7 +55,7 @@ fi
 # TODO is there a way to get this without downloading page twice? Could write it to disk instead I guess...
 resultpage=$(curl -Lfs -w "%{url_effective}" -o /dev/null "https://en.wikipedia.org/wiki/?search=$1")
 # -L follows redirects on the search and -s prevents the progress bar
-res=$(curl -L -s "$resultpage")
+RESP=$(curl -L -s "$resultpage")
 # res=$(cat ./test-data/Stefano_Bianchini.html)
 
 
@@ -44,11 +69,11 @@ printf "Found this wiki page: \'%s\'.\n" "$resultpage"
 
 if [ -z "$SUBSECTION" ]; then 
   # Search within the Body HTML to find the first p tag that isn't within a table element.
-  lineno=$(echo "$res" | grep -m 1 -n '<div class="mw-parser-output">' | sed '/^$/d' | cut -d : -f 1)
+  lineno=$(echo "$RESP" | grep -m 1 -n '<div class="mw-parser-output">' | sed '/^$/d' | cut -d : -f 1)
   intable=false
   while true ;
   do
-    line=$(sed "${lineno}q;d" <<< "$res")
+    line=$(sed "${lineno}q;d" <<< "$RESP")
     if [[ $line =~ .*"<table".* ]]; then
       intable=true
     elif [ $intable = true  ] && [[ $line =~ .*"</table>".* ]]; then
@@ -59,41 +84,23 @@ if [ -z "$SUBSECTION" ]; then
     ((lineno++))
   done  
   printf "\nFirst paragraph:\n\n"
-  line=$(sed "${lineno}q;d" <<< "$res")
+  line=$(sed "${lineno}q;d" <<< "$RESP")
   sed -e 's/<[^>]*>//g' <<< "$line"
-
-  # Print any headers
-  printf "\nSections:\n\n"
-  # Get all header line nums
-  sectionsbody=$(tail -n "+${lineno}" <<< "$res")
-  IFS=$'\n' headerarr=($(echo "$sectionsbody" | grep -n '<h.><span.*class="mw-headline"' | cut -d : -f 1))
-  for n in "${headerarr[@]}"
-  do
-    ln=$(sed "${n}q;d" <<< "$sectionsbody")
-    indent=""
-    if [[ $ln =~ .*"<h2".* ]]; then 
-      indent=""
-    elif [[ $ln =~ .*"<h3".* ]]; then 
-      indent="  "
-    elif [[ $ln =~ .*"<h4".* ]]; then 
-      indent="    "
-    elif [[ $ln =~ .*"<h5".* ]]; then 
-      indent="      "
-    elif [[ $ln =~ .*"<h6".* ]]; then 
-      indent="        "
-    fi
-    echo "$indent$ln" | sed -e 's/<[^>]*>//g' | sed -e 's/\[edit\]//g'
-  done
+  print_sections "$lineno"
 else 
   # Attempt to locate subsection requested
-  sectionln=$(grep -in "<h.><span class=\"mw-headline\".*${SUBSECTION}" <<< "$res" | cut -d : -f 1)
+  sectionln=$(grep -in "<h.><span class=\"mw-headline\".*${SUBSECTION}" <<< "$RESP" | cut -d : -f 1)
   if [ -n "$sectionln" ]; then 
-    echo "Found section on $sectionln"
-    
+    # echo "Found section on $sectionln"
+    sectionh=$(sed "${sectionln}q;d" <<< "$RESP")
+    pline=$(grep -m 1 '<p>' <<< "$(tail -n +"${sectionln}" <<< "$RESP")")
+    sed -e 's/<[^>]*>//g' <<< "$sectionh"
+    sed -e 's/<[^>]*>//g' <<< "$pline"
   else 
-    echo "Couldn't find section '$SUBSECTION'."
+    echo "Couldn't find section '$SUBSECTION'. Here are the available ones."
+    print_sections
   fi
 fi
 
 # TODO convert HTML escape coded characters to ascii
-# TODO handle 404s or missing subsections
+# TODO handle 404s
