@@ -58,14 +58,20 @@ resultpage=$(curl -Lfs -w "%{url_effective}" -o /dev/null "https://en.wikipedia.
 RESP=$(curl -L -s "$resultpage")
 # res=$(cat ./test-data/Stefano_Bianchini.html)
 
-
 printf "\nYou searched for \'%s\'" "$TERM"
 if [ -n "$SUBSECTION" ]; then 
   printf " \'%s\'.\n" "$SUBSECTION"
 else
   printf "\n"
 fi
-printf "Found this wiki page: \'%s\'.\n" "$resultpage"
+
+notexists=$(grep -i 'The page .* does not exist.' <<< "$RESP")
+if [[ -n $notexists ]]; then 
+  printf "No matching pages were found. Please try a different search term.\n"
+  exit 1
+else
+  printf "Found this wiki page: \'%s\'.\n" "$resultpage"
+fi
 
 if [ -z "$SUBSECTION" ]; then 
   # Search within the Body HTML to find the first p tag that isn't within a table element.
@@ -104,4 +110,3 @@ else
 fi
 
 # TODO convert HTML escape coded characters to ascii
-# TODO handle 404s
