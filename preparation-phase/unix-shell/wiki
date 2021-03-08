@@ -66,12 +66,14 @@ if [ -z "$SUBSECTION" ]; then
   printf "\nSections:\n\n"
   # Get all header line nums
   sectionsbody=$(tail -n "+${lineno}" <<< "$res")
-  IFS=$'\n' headerarr=($(echo "$sectionsbody" | grep -n '<h.><span class="mw-headline"' | cut -d : -f 1))
+  IFS=$'\n' headerarr=($(echo "$sectionsbody" | grep -n '<h.><span.*class="mw-headline"' | cut -d : -f 1))
   for n in "${headerarr[@]}"
   do
     ln=$(sed "${n}q;d" <<< "$sectionsbody")
     indent=""
-    if [[ $ln =~ .*"<h3".* ]]; then 
+    if [[ $ln =~ .*"<h2".* ]]; then 
+      indent=""
+    elif [[ $ln =~ .*"<h3".* ]]; then 
       indent="  "
     elif [[ $ln =~ .*"<h4".* ]]; then 
       indent="    "
