@@ -26,10 +26,9 @@ func TestI2B(t *testing.T) {
 			t.Errorf("Expected i2b(%d) == %v but got %v", c, c.expect, v)
 		}
 		for i, cv := range c.expect {
-			if v[i] != cv {
+			if v[len(v)-(i+1)] != cv {
 				t.Errorf("Expected i2b(%d) == %v but got %v", c, c.expect, v)
 			}
 		}
-
 	}
 }
