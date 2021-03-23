@@ -53,11 +53,26 @@ func compute(memory []byte) {
 			memory[oparg2] = registers[oparg1]
 		case Add:
 			fmt.Printf("Add %d %d\n", oparg1, oparg2)
-			registers[1] += registers[2]
+			registers[oparg1] += registers[oparg2]
+		case Addi:
+			fmt.Printf("Addi %d %d\n", oparg1, oparg2)
+			registers[oparg1] += oparg2
 		case Sub:
-			fmt.Printf("Subtract %d %d\n", oparg1, oparg2)
+			fmt.Printf("Sub %d %d\n", oparg1, oparg2)
 			// Possible bug? Could oparg1 ever be r2 for some reason?
 			registers[oparg1] -= registers[oparg2]
+		case Subi:
+			fmt.Printf("Subi %d %d\n", oparg1, oparg2)
+			// Possible bug? Could oparg1 ever be r2 for some reason?
+			registers[oparg1] -= oparg2
+		case Jump:
+			fmt.Printf("Jump %d\n", oparg1)
+			registers[0] = oparg1
+		case Beqz:
+			fmt.Printf("Beqz %d %d\n", oparg1, oparg2)
+			if registers[oparg1] == 0 {
+				registers[0] += oparg2
+			}
 		case Halt:
 			fmt.Println("Halt")
 			return
