@@ -6,6 +6,8 @@ preparation-phase/c-lang/ls-clone/test
 preparation-phase/golang/code/src/gopl.io
 preparation-phase/golang/code/bin
 preparation-phase/golang/code/pkg
+bin
+pkg
 preparation-phase/golang/code/src/gopl-exercises/ex-4-12/xkcd/raw_data
 preparation-phase/golang/code/src/gopl-exercises/ex-4-12/xkcd/comic_index.json
 preparation-phase/unix-shell/test-data/
