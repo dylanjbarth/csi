@@ -53,11 +53,11 @@ int main(void)
 {
   UNITY_BEGIN();
 
-  RUN_TEST(test_sum_to_0);
-  RUN_TEST(test_sum_to_1);
-  RUN_TEST(test_sum_to_3);
-  RUN_TEST(test_sum_to_10);
-  RUN_TEST(test_sum_to_1000);
+  // RUN_TEST(test_sum_to_0);
+  // RUN_TEST(test_sum_to_1);
+  // RUN_TEST(test_sum_to_3);
+  // RUN_TEST(test_sum_to_10);
+  // RUN_TEST(test_sum_to_1000);
 
   // RUN_TEST(test_convert_0);
   // RUN_TEST(test_convert_1);
@@ -67,7 +67,7 @@ int main(void)
 
   // RUN_TEST(test_pangram_empty);
   // RUN_TEST(test_pangram_alpha);
-  // RUN_TEST(test_pangram_punctuated);
+  RUN_TEST(test_pangram_punctuated);
   // RUN_TEST(test_pangram_incomplete);
   // RUN_TEST(test_pangram_mixed_case);
   // RUN_TEST(test_pangram_phrase);
