@@ -1,5 +1,5 @@
-; naive approach first: get length of string, then work backward incrementing by 
-; better approach, bit shift left to raise to power of two, but I want to grind
+; naive approach first: get length of string, then work backward incrementing by powers of 2
+; better approach, bit shift left to raise to power of two
 
 section .text
 global binary_convert
@@ -43,4 +43,4 @@ binary_convert:
 
 section .data
 zero: db 48
-; one: db 49
+

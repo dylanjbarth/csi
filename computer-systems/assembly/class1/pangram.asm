@@ -1,15 +1,16 @@
-; starting with most straightforward solution, array of 26 bytes (because I'm not sure how to address individual bits yet...)
+; starting with most straightforward solution, flipping bits for the 26 characters
 
 section .text
 global pangram
 pangram:
 	; strategy is to iterate through the sentence, flipping bits in memory and then seeing if all are set
 	mov r8, 0  ; counter
+	mov rax, 0 ; zero out our bit flipper
 .checkletter:
 	movzx ecx, byte [rdi + r8]
-	; if null, we are done
+	; if null, we are ready to check the total
 	cmp ecx, 0
-	je .done
+	je .total
 
 	; otherwise check conditions that mean we can just skip to next
 	cmp ecx, 122
@@ -24,15 +25,25 @@ pangram:
 	jg .loopcontinue
 	cmp ecx, 65
 	jl .loopcontinue
+
 .isupper: ; at this point we've trimmed everything out that isn't A-Z
-	; mark the bytes in memory 
+	; mark the bits in memory 
 	sub ecx, 65 ; get the letter index from 0
-	mov byte [letters], 1  ; flip the bit
+	bts eax, ecx  ; set the bit to 1 at the index of ecx
 .loopcontinue:
 	inc r8
 	jmp .checkletter
-.done:
+.total:
 	; true if letters are all 1 otherwise false
+	cmp rax, 0x0000000003ffffff  ; 2^26
+	je .true
+	; else 
+	mov rax, 0
+	jmp .done
+.true:
+	mov rax, 1
+	jmp .done
+.done:
 	ret
 
 ; section .data
@@ -40,6 +51,3 @@ pangram:
 ; a: 97
 ; Z: 90
 ; z: 122
-
-section .bss
-letters: resb 26

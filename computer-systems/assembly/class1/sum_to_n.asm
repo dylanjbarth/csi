@@ -11,9 +11,4 @@ sum_to_n:
 	inc rcx
 	jmp .add_v
 .done:
-	; mov rax, [total]
 	ret
-
-; section .data
-; total: db 0
-; Mach-O 64-bit format does not support 32-bit absolute addresses ???
