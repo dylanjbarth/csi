@@ -13,29 +13,29 @@ pangram:
 	je .total
 
 	; otherwise check conditions that mean we can just skip to next
-	cmp ecx, 122
+	cmp ecx, 'z'
 	jg .loopcontinue
-	cmp ecx, 65
+	cmp ecx, 'A'
 	jl .loopcontinue
 	; now if greater than 90, we can subtract 32 to uppercase it.. then trim off the end. 
-	cmp ecx, 90
+	cmp ecx, 'Z'
 	jle .isupper
 	sub ecx, 32
-	cmp ecx, 90
+	cmp ecx, 'Z'
 	jg .loopcontinue
-	cmp ecx, 65
+	cmp ecx, 'A'
 	jl .loopcontinue
 
 .isupper: ; at this point we've trimmed everything out that isn't A-Z
 	; mark the bits in memory 
-	sub ecx, 65 ; get the letter index from 0
+	sub ecx, 'A' ; get the letter index from 0
 	bts eax, ecx  ; set the bit to 1 at the index of ecx
 .loopcontinue:
 	inc r8
 	jmp .checkletter
 .total:
 	; true if letters are all 1 otherwise false
-	cmp rax, 0x0000000003ffffff  ; 2^26
+	cmp rax, 0x3ffffff  ; 2^26
 	je .true
 	; else 
 	mov rax, 0
@@ -46,8 +46,3 @@ pangram:
 .done:
 	ret
 
-; section .data
-; A: 65
-; a: 97
-; Z: 90
-; z: 122
