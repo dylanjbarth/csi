@@ -67,9 +67,9 @@ int main(void)
   RUN_TEST(test_fib_10);
   RUN_TEST(test_fib_12);
 
-  // RUN_TEST(test_index_row);
-  // RUN_TEST(test_index_col);
-  // RUN_TEST(test_index_rect);
+  RUN_TEST(test_index_row);
+  RUN_TEST(test_index_col);
+  RUN_TEST(test_index_rect);
 
   // RUN_TEST(test_cone_volume_0_0);
   // RUN_TEST(test_cone_volume_1_2);
