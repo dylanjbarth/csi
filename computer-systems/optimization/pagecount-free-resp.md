@@ -45,3 +45,13 @@ KVX gcc also generates some weird stuff.
 * By using Agner Fog’s instruction tables or reviewing CS:APP chapter 5.7, can you determine which of the generated instructions may be slow?
 
 instructions inside the loop where we are reading or writing from memory. 
+
+* Before optimization
+
+$ gcc -O0 pagecount.c && ./a.out
+0.07s to run 10000000 tests (7.43ns per test)
+
+* After optimization  (bitshifting instead of divide)
+
+$ gcc -O0 pagecount.c && ./a.out
+0.03s to run 10000000 tests (2.65ns per test)
