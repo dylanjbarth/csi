@@ -15,3 +15,4 @@ preparation-phase/unix-shell/test-data/
 preparation-phase/algos
 computer-systems/assembly/class1/tests
 computer-systems/assembly/class2/tests
+computer-systems/optimization/vec/tests
