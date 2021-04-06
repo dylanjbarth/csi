@@ -12,7 +12,7 @@ data_t dotproduct(vec_ptr u, vec_ptr v)
 
    // 3X3 loop unrolling
    long i;
-   for (i = 0; i < len; i += 3)
+   for (i = 0; i < len - 2; i += 3)
    { // we can assume both vectors are same length
       sum1 = sum1 + (ustart[i] * vstart[i]);
       sum2 = sum2 + (ustart[i + 1] * vstart[i + 1]);
