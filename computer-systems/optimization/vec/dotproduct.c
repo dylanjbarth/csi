@@ -14,9 +14,9 @@ data_t dotproduct(vec_ptr u, vec_ptr v)
    long i;
    for (i = 0; i < len; i += 3)
    { // we can assume both vectors are same length
-      sum1 += ustart[i] * vstart[i];
-      sum2 += ustart[i + 1] * vstart[i + 1];
-      sum3 += ustart[i + 2] * vstart[i + 2];
+      sum1 = sum1 + (ustart[i] * vstart[i]);
+      sum2 = sum2 + (ustart[i + 1] * vstart[i + 1]);
+      sum3 = sum3 + (ustart[i + 2] * vstart[i + 2]);
    }
    // finish off the loop
    for (; i < len; i++)
