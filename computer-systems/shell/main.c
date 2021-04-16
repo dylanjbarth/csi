@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <string.h>
+#include <signal.h>
 
 #define SHELL "turtlsh"
 #define PROMPT "$> "
@@ -15,15 +16,12 @@
 
 void split(char *str, char **output);
 void bye();
-
-void bye()
-{
-  printf("\n%s\n", BYE);
-  exit(0);
-}
+void interrupt_handler(int sig);
+int cpid = 0;
 
 int main(int argc, char **argv)
 {
+  signal(SIGINT, interrupt_handler);
   while (1)
   {
     char input[MAXCHAR] = "";
@@ -32,8 +30,6 @@ int main(int argc, char **argv)
     int i = 0;
     while ((ch = fgetc(stdin)))
     {
-      // TODO why does this not work when I've already typed something? I have to type it twice.
-      // TODO might be nice to also handle the keyboard interrupt signal?
       if (ch == EOF)
       {
         printf("^D");
@@ -46,12 +42,13 @@ int main(int argc, char **argv)
       input[i] = ch;
       i++;
     }
-    int cpid = fork();
-    int cstat;
+    cpid = fork();
     if (cpid > 0)
     {
       // parent process, wait for child to complete then reap
+      int cstat;
       waitpid(cpid, &cstat, WUNTRACED);
+      cpid = 0;
     }
     else
     {
@@ -81,6 +78,7 @@ int main(int argc, char **argv)
           printf("'%s': command not found.\n", args[0]);
         }
       }
+      exit(0);
     }
   };
   return 0;
@@ -97,4 +95,25 @@ void split(char *str, char **output)
     ptr = strtok(NULL, " ");
     i++;
   }
+}
+
+// handle a sigint
+void interrupt_handler(int sig)
+{
+  if (cpid != 0)
+  {
+    kill(cpid, SIGKILL);
+    printf("\n");
+  }
+  else
+  {
+    exit(0);
+  }
+  cpid = 0;
+}
+
+void bye()
+{
+  printf("\n%s\n", BYE);
+  exit(0);
 }
