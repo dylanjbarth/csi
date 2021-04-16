@@ -35,7 +35,6 @@ int main(int argc, char **argv)
       input[i] = ch;
       i++;
     }
-    printf("%s\n", input);
     int cpid = fork();
     int cstat;
     if (cpid > 0)
@@ -52,7 +51,7 @@ int main(int argc, char **argv)
       int err = execvp(args[0], args);
       if (err < 0)
       {
-        printf("Exec failed");
+        printf("'%s' Command not found.\n", args[0]);
       }
     }
   };
