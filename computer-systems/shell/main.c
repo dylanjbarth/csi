@@ -7,13 +7,21 @@
 
 #define SHELL "turtlsh"
 #define PROMPT "$> "
-#define BYE "BYEEEEEEEE"
+#define BYE "Remember, it's turtles all the way down."
 #define MAXCHAR 100
 #define MAXARGS 5
 
 #define BUILTIN_EXIT "exit"
 #define BUILTIN_CD "cd"
 
+char *ascii_turtle = "\
+  _____     ____\n\
+ /      \\  |  o |\n\
+|        |/ ___\\|\n\
+|_________/     \n\
+|_|_| |_|_|\n\
+Welcome to turtlsh!\n";
+char *utf8_turtle = "\xF0\x9F\x90\xA2";
 void split(char *str, char **output);
 void bye();
 void interrupt_handler(int sig);
@@ -21,12 +29,13 @@ int cpid = 0;
 
 int main(int argc, char **argv)
 {
+  printf("%s", ascii_turtle);
   signal(SIGINT, interrupt_handler);
   while (1)
   {
     char input[MAXCHAR] = "";
     char ch;
-    printf("%s", PROMPT);
+    printf("%s $>", utf8_turtle);
     int i = 0;
     while ((ch = fgetc(stdin)))
     {
@@ -103,11 +112,10 @@ void interrupt_handler(int sig)
   if (cpid != 0)
   {
     kill(cpid, SIGKILL);
-    printf("\n");
   }
   else
   {
-    exit(0);
+    bye();
   }
   cpid = 0;
 }
