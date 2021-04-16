@@ -51,6 +51,18 @@ int main(int argc, char **argv)
       input[i] = ch;
       i++;
     }
+    // split strings on whitespace into char array
+    // exec if command else command not found
+    char **args = malloc(MAXARGS * sizeof(char *));
+    split(input, args);
+
+    // check for exit before forking
+    if (strcmp(args[0], BUILTIN_EXIT) == 0)
+    {
+      bye();
+      exit(0);
+    }
+
     cpid = fork();
     if (cpid > 0)
     {
@@ -61,10 +73,6 @@ int main(int argc, char **argv)
     }
     else
     {
-      // split strings on whitespace into char array
-      // exec if command else command not found
-      char **args = malloc(MAXARGS * sizeof(char *));
-      split(input, args);
       // check for builtins
       if (strcmp(args[0], BUILTIN_CD) == 0)
       {
@@ -73,10 +81,6 @@ int main(int argc, char **argv)
         {
           printf("-%s: cd: %s: No such file or directory\n", SHELL, args[1]);
         }
-      }
-      else if (strcmp(args[0], BUILTIN_EXIT) == 0)
-      {
-        bye();
       }
       else
       {
