@@ -15,6 +15,8 @@ int main(int argc, char **argv)
     int i = 0;
     while ((ch = fgetc(stdin)))
     {
+      // TODO why does this not work when I've already typed something? I have to type it twice.
+      // TODO might be nice to also handle the keyboard interrupt signal?
       if (ch == EOF)
       {
         printf("^D\n%s\n", BYE);
