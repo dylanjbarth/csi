@@ -2,13 +2,14 @@ package exercises
 
 import (
 	"fmt"
+	"math"
 	"testing"
 )
 
 func TestFloat64ToUint64Bin(t *testing.T) {
 	n := float64(3.14)
 	o := float64ToUint64Bin(n)
-	ns := fmt.Sprintf("%064b", n)
+	ns := fmt.Sprintf("%064b", math.Float64bits(n))
 	os := fmt.Sprintf("%064b", o)
 	if ns != os {
 		t.Errorf("Expected float64 binary %s to equal uint64 binary %s. But it didn't :(", ns, os)

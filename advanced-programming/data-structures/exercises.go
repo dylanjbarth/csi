@@ -1,8 +1,13 @@
 package exercises
 
-import "unsafe"
+import (
+	"unsafe"
+)
 
 func float64ToUint64Bin(n float64) uint64 {
+	// 1. Create pointer of arbitrary type using unsafe.Pointer
+	// 2. we then do a type conversion, converting the unsafe.Pointer to a uint64 pointer.
+	// 3. We then dereference the pointer to return the value which is the same bits in memory as the float64 because the pointers are pointing at the same memory value.
 	return *(*uint64)(unsafe.Pointer(&n))
 }
 
