@@ -47,6 +47,27 @@ func sumSlice(n []int) int {
 	return sum
 }
 
+// local copy of hmap from runtime/map.go
+type hmap_copy struct {
+	count     int // # live cells == size of map.  Must be first (used by len() builtin)
+	flags     uint8
+	B         uint8  // log_2 of # of buckets (can hold up to loadFactor * 2^B items)
+	noverflow uint16 // approximate number of overflow buckets; see incrnoverflow for details
+	hash0     uint32 // hash seed
+
+	buckets    unsafe.Pointer // array of 2^B Buckets. may be nil if count==0.
+	oldbuckets unsafe.Pointer // previous bucket array of half the size, non-nil only when growing
+	nevacuate  uintptr        // progress counter for evacuation (buckets less than this have been evacuated)
+}
+
 func sumMap(m map[int]int) (int, int) {
-	return 5, 5
+	var keysum int
+	var valsum int
+	rawmap := *(*hmap_copy)(unsafe.Pointer(&m))
+	if rawmap.count > 0 {
+		nbuckets := rawmap.B * rawmap.B
+		fmt.Println(nbuckets)
+	}
+	// normally this would be:
+	return keysum, valsum
 }
