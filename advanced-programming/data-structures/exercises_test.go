@@ -17,26 +17,32 @@ func TestFloat64ToUint64Bin(t *testing.T) {
 	}
 }
 
-func TestAreStringsAliases(t *testing.T) {
+func TestStringsShareMemory(t *testing.T) {
 	s1 := "foo"
-	s2 := "bar"
-	if areStringsAliases(&s1, &s2) {
-		t.Errorf("Expected s1 (%d) and s2 (%d) to not be aliases because they are different values and should have different memory locations.", &s1, &s2)
+	s2 := "foo"
+	if stringsShareMemory(&s1, &s2) {
+		t.Errorf("Expected s1 (%s) and s2 (%s) to not share memory because they are different values and should have different memory locations.", s1, s2)
 	}
 
 	s3 := "foo2"
 	var s4 *string = (*string)(unsafe.Pointer(&s3)) // todo why does this work?
-	// s4 := *(*string)(unsafe.Pointer(&s3))  // but this doesn't
+	// // s4 := *(*string)(unsafe.Pointer(&s3))  // but this doesn't? seems like the one liner de-ref is copying elsewhere in memory?
 
-	if !areStringsAliases(&s3, s4) {
-		t.Errorf("Expected s3 (%d) and s4 (%d) to be aliases because s4 is a copy of the memory location at s3.", &s3, s4)
+	if !stringsShareMemory(&s3, s4) {
+		t.Errorf("Expected s3 (%s) and s4 (%s) to share memory because s4 is a copy of the memory location at s3.", s3, *s4)
+	}
+
+	s5 := "foo3"
+	s6 := s5[1:2]
+	if !stringsShareMemory(&s5, &s6) {
+		t.Errorf("Expected s5 (%s) and s6 (%s) to share memory because s6 is a slice of s5.", s5, s6)
 	}
 }
 
 func TestSumSlice(t *testing.T) {
 	tcase := []int{1, 2}
 	total := 3
-	out := sumSlice(tcase)
+	out := sumSlice(&tcase)
 	if out != total {
 		t.Errorf("Expected sum to be %d but got %d", total, out)
 	}
