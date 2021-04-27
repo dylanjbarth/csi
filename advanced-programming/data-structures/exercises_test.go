@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"testing"
+	"unsafe"
 )
 
 func TestFloat64ToUint64Bin(t *testing.T) {
@@ -18,9 +19,17 @@ func TestFloat64ToUint64Bin(t *testing.T) {
 
 func TestAreStringsAliases(t *testing.T) {
 	s1 := "foo"
-	s2 := s1
-	if !areStringsAliases(s1, s2) {
-		t.Errorf("Expected s1 (%d) and s2 (%d) to be aliases because they have the same memory location.", &s1, &s2)
+	s2 := "bar"
+	if areStringsAliases(&s1, &s2) {
+		t.Errorf("Expected s1 (%d) and s2 (%d) to not be aliases because they are different values and should have different memory locations.", &s1, &s2)
+	}
+
+	s3 := "foo2"
+	var s4 *string = (*string)(unsafe.Pointer(&s3)) // todo why does this work?
+	// s4 := *(*string)(unsafe.Pointer(&s3))  // but this doesn't
+
+	if !areStringsAliases(&s3, s4) {
+		t.Errorf("Expected s3 (%d) and s4 (%d) to be aliases because s4 is a copy of the memory location at s3.", &s3, s4)
 	}
 }
 
