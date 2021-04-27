@@ -12,18 +12,20 @@ func float64ToUint64Bin(n float64) uint64 {
 	return *(*uint64)(unsafe.Pointer(&n))
 }
 
+type strIface struct {
+	ptr unsafe.Pointer
+	len int
+}
+
 func stringsShareMemory(s1, s2 *string) bool {
 	// strings are 2 words each, 1st word is pointer to memory location of underlying byte array...
 	// so need to figure out how to access that pointer?
-	s1ptr := unsafe.Pointer(s1) // this is a pointer to the start of the 2 word string in memory (which itself is a pointer to the underlying data)
-	s1len := unsafe.Pointer(uintptr(s1ptr) + unsafe.Sizeof(s1ptr))
-	s1start := uintptr(s1ptr)
-	s1end := uintptr(s1ptr) + uintptr(s1len)*unsafe.Sizeof(s1ptr)
-	s2ptr := unsafe.Pointer(s2)
-	s2len := unsafe.Pointer(uintptr(s2ptr) + unsafe.Sizeof(s2ptr))
-	s2start := uintptr(s2ptr)
-	s2end := uintptr(s2ptr) + uintptr(s2len)*unsafe.Sizeof(s2ptr)
-	fmt.Printf("Test case s1 %s start %d end %d s2 %s start %d end %d\n", *s1, s1start, s1end, *s2, s2start, s2end)
+	s1p := *(*strIface)(unsafe.Pointer(s1))
+	s2p := *(*strIface)(unsafe.Pointer(s2))
+	s1start := uintptr(s1p.ptr)
+	s2start := uintptr(s2p.ptr)
+	s1end := s1start + uintptr(s1p.len)
+	s2end := s2start + uintptr(s2p.len)
 	return (s1start <= s2start && s1end >= s2start) || (s1start <= s2end && s1end >= s2end)
 }
 

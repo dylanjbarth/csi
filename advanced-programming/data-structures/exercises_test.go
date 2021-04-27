@@ -19,7 +19,7 @@ func TestFloat64ToUint64Bin(t *testing.T) {
 
 func TestStringsShareMemory(t *testing.T) {
 	s1 := "foo"
-	s2 := "foo"
+	s2 := "bar"
 	if stringsShareMemory(&s1, &s2) {
 		t.Errorf("Expected s1 (%s) and s2 (%s) to not share memory because they are different values and should have different memory locations.", s1, s2)
 	}
