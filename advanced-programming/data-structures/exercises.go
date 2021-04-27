@@ -60,13 +60,22 @@ type hmap_copy struct {
 	nevacuate  uintptr        // progress counter for evacuation (buckets less than this have been evacuated)
 }
 
+type mapIface struct {
+	_type unsafe.Pointer
+	data  unsafe.Pointer
+}
+
 func sumMap(m map[int]int) (int, int) {
 	var keysum int
 	var valsum int
-	rawmap := *(*hmap_copy)(unsafe.Pointer(&m))
-	if rawmap.count > 0 {
-		nbuckets := rawmap.B * rawmap.B
+	// thx rishi && https://hackernoon.com/some-insights-on-maps-in-golang-rm5v3ywh
+	ei := (*mapIface)(unsafe.Pointer(&m))
+	// mdata := (*hmap_copy)(ei.data)
+	mtype := (*hmap_copy)(ei._type)
+	if mtype.count > 0 {
+		nbuckets := mtype.B * mtype.B
 		fmt.Println(nbuckets)
+		// TODO search through buckets pointer?
 	}
 	// normally this would be:
 	return keysum, valsum
