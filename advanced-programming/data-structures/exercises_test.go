@@ -42,7 +42,14 @@ func TestStringsShareMemory(t *testing.T) {
 func TestSumSlice(t *testing.T) {
 	tcase := []int{1, 2}
 	total := 3
-	out := sumSlice(&tcase)
+	out := sumSlice(tcase)
+	if out != total {
+		t.Errorf("Expected sum to be %d but got %d", total, out)
+	}
+
+	tcase = []int{5, 10, 15}
+	total = 30
+	out = sumSlice(tcase)
 	if out != total {
 		t.Errorf("Expected sum to be %d but got %d", total, out)
 	}

@@ -27,9 +27,26 @@ func stringsShareMemory(s1, s2 *string) bool {
 	return (s1start <= s2start && s1end >= s2start) || (s1start <= s2end && s1end >= s2end)
 }
 
-func sumSlice(n *[]int) int {
-	// strategy here is to
-	return 5
+func sumSlice(n []int) int {
+	// get the start of the slice
+	startptr := unsafe.Pointer(&n)
+	lenptr := unsafe.Pointer(uintptr(startptr) + unsafe.Sizeof(startptr))
+	// capptr := unsafe.Pointer(uintptr(startptr) + 2*unsafe.Sizeof(startptr))
+	sum := 0
+	end := *(*int)(lenptr)
+	// a := *(*int)(unsafe.Pointer(&n)) // todo why doesn't this work?? why do I have to get the first index?
+	// b := *(*int)(unsafe.Pointer(&n[0]))
+	// fmt.Println(a, b)
+	for i := 0; i < end; i++ {
+		scalar := uintptr(i)
+		// sizeof := unsafe.Sizeof(startptr)
+		// startmem := uintptr(unsafe.Pointer(&n))
+		// finalmem := startmem + scalar*sizeof
+		// next := *(*int)(unsafe.Pointer(finalmem))
+		next := *(*int)(unsafe.Pointer(uintptr(unsafe.Pointer(&n[0])) + scalar*unsafe.Sizeof(i)))
+		sum += next
+	}
+	return sum
 }
 
 func sumMap(m map[int]int) (int, int) {
