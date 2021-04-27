@@ -27,23 +27,19 @@ func stringsShareMemory(s1, s2 *string) bool {
 	return (s1start <= s2start && s1end >= s2start) || (s1start <= s2end && s1end >= s2end)
 }
 
+type sliceIface struct {
+	// https://research.swtch.com/godata
+	ptr unsafe.Pointer
+	len int
+	cap int
+}
+
 func sumSlice(n []int) int {
-	// get the start of the slice
-	startptr := unsafe.Pointer(&n)
-	lenptr := unsafe.Pointer(uintptr(startptr) + unsafe.Sizeof(startptr))
-	// capptr := unsafe.Pointer(uintptr(startptr) + 2*unsafe.Sizeof(startptr))
+	slicemem := (*sliceIface)(unsafe.Pointer(&n))
 	sum := 0
-	end := *(*int)(lenptr)
-	// a := *(*int)(unsafe.Pointer(&n)) // todo why doesn't this work?? why do I have to get the first index?
-	// b := *(*int)(unsafe.Pointer(&n[0]))
-	// fmt.Println(a, b)
-	for i := 0; i < end; i++ {
+	for i := 0; i < slicemem.len; i++ {
 		scalar := uintptr(i)
-		// sizeof := unsafe.Sizeof(startptr)
-		// startmem := uintptr(unsafe.Pointer(&n))
-		// finalmem := startmem + scalar*sizeof
-		// next := *(*int)(unsafe.Pointer(finalmem))
-		next := *(*int)(unsafe.Pointer(uintptr(unsafe.Pointer(&n[0])) + scalar*unsafe.Sizeof(i)))
+		next := *(*int)(unsafe.Pointer(uintptr(slicemem.ptr) + scalar*unsafe.Sizeof(slicemem.ptr)))
 		sum += next
 	}
 	return sum
