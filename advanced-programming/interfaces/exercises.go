@@ -75,7 +75,6 @@ func CountInterfaceMethods(any interface{}) int {
 }
 
 // Now that you know how interfaces are represented in memory, how do you think “type assertions” and “type switches” work? If you were designing Go yourself, how would you approach these features?
-
 /*
 	Type assertion: eg someinterface.(someconcretetype) => go probably iterates through the concrete type's itable, and ensures that each method has the same signature.
 	Type switches: for each case statement, we are basically just evaluating a type assertion.

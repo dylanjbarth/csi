@@ -58,8 +58,16 @@ func TestCountInterfaceMethods(t *testing.T) {
 	for _, v := range cases {
 		fmt.Printf("Running %s", v.label)
 		o := CountInterfaceMethods(v.any)
+		// ensure the compiler doesn't optimize away the methods?
+		switch a := v.any.(type) {
+		case twoM:
+			fmt.Println(a.one(1))
+			fmt.Println(a.two(1))
+		case oneM:
+			fmt.Println(a.one(1))
+		}
 		if o != v.count {
-			t.Errorf("Expected interface extract to return %d but got %d", o, v.count)
+			t.Errorf("Expected interface extract to return %d but got %d", v.count, o)
 		}
 	}
 }
