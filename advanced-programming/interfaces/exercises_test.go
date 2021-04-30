@@ -1,6 +1,9 @@
 package exercises
 
-import "testing"
+import (
+	"fmt"
+	"testing"
+)
 
 func TestInterfaceExtract(t *testing.T) {
 	tcase := []int{1, 2, 4, 10}
@@ -8,6 +11,49 @@ func TestInterfaceExtract(t *testing.T) {
 		out := InterfaceExtract(interface{}(int(v)))
 		if out != v {
 			t.Errorf("Expected interface extract to return %d but got %d", out, v)
+		}
+	}
+}
+
+type oneM interface {
+	one(int) int
+}
+type twoM interface {
+	one(int) int
+	two(int) int
+}
+type thing int
+
+func (t thing) one(a int) int {
+	return 1 + a
+}
+func (t thing) two(a int) int {
+	return 2 + a
+}
+func TestCountInterfaceMethods(t *testing.T) {
+	type tcase struct {
+		label string
+		any   interface{}
+		count int
+	}
+	a := thing(1)
+	cases := []tcase{
+		{
+			"oneM",
+			oneM(a),
+			1,
+		},
+		{
+			"twoM",
+			twoM(a),
+			2,
+		},
+	}
+	for _, v := range cases {
+		fmt.Printf("Running %s", v.label)
+		o := CountInterfaceMethods(v.any)
+		if o != v.count {
+			t.Errorf("Expected interface extract to return %d but got %d", o, v.count)
 		}
 	}
 }
