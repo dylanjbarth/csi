@@ -15,6 +15,7 @@ func TestInterfaceExtract(t *testing.T) {
 	}
 }
 
+type empty interface{}
 type oneM interface {
 	one(int) int
 }
@@ -38,6 +39,11 @@ func TestCountInterfaceMethods(t *testing.T) {
 	}
 	a := thing(1)
 	cases := []tcase{
+		{
+			"empty",
+			empty(1),
+			1,
+		},
 		{
 			"oneM",
 			oneM(a),

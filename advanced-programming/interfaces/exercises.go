@@ -11,13 +11,43 @@ type generic_iface struct {
 	data unsafe.Pointer
 }
 
+type _type struct {
+	size       uintptr
+	ptrdata    uintptr // size of memory prefix holding all pointers
+	hash       uint32
+	tflag      uint8
+	align      uint8
+	fieldAlign uint8
+	kind       uint8
+	// function for comparing objects of this type
+	// (ptr to object A, ptr to object B) -> ==?
+	equal func(unsafe.Pointer, unsafe.Pointer) bool
+	// gcdata stores the GC type data for the garbage collector.
+	// If the KindGCProg bit is set in kind, gcdata is a GC program.
+	// Otherwise it is a ptrmask bitmap. See mbitmap.go for details.
+	gcdata    *byte
+	str       int32
+	ptrToThis int32
+}
+
+type name struct {
+	bytes *byte
+}
+
+type imethod struct {
+	name int32
+	ityp int32
+}
+
+type interfacetype struct {
+	typ     _type
+	pkgpath name
+	mhdr    []imethod
+}
+
 type runtime_itab struct {
-	// odd that this and the _type were not found by the compiler in the runtime. Where are they?
-	// 	inter *interfacetype
-	// _type *_type
-	// using unsafe pointer for now
-	inter unsafe.Pointer
-	_type unsafe.Pointer
+	inter *interfacetype
+	_type *_type
 	hash  uint32 // copy of _type.hash. Used for type switches.
 	_     [4]byte
 	fun   [1]uintptr // variable sized. fun[0]==0 means _type does not implement inter.
@@ -34,12 +64,12 @@ func InterfaceExtract(any interface{}) int {
 // We’d recommend time-boxing this exercise because Part 2 will likely address many of your remaining open questions. that can be called on that interface value.
 func CountInterfaceMethods(any interface{}) int {
 	i := *(*generic_iface)(unsafe.Pointer(&any))
-	// fun   [1]uintptr // not too sure how to evaluate this... variable sized array of function pointers and if it's not empty it means it has at least one method. 
+	// fun   [1]uintptr // not too sure how to evaluate this... variable sized array of function pointers and if it's not empty it means it has at least one method.
 	// but how do I know how many? maybe try type conversion into a func pointer slice?
-	if (i.tab.fun[0] == 0) {
+	if i.tab.fun[0] == 0 {
 		return 0
 	}
-	methods := (func)(i.tab.fun[0])
+	// methods := (func)(i.tab.fun[0])
 	fmt.Println(i)
 	return 5
 }
