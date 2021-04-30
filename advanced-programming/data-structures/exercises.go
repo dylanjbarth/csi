@@ -29,6 +29,12 @@ func stringsShareMemory(s1, s2 *string) bool {
 	return (s1start <= s2start && s1end >= s2start) || (s1start <= s2end && s1end >= s2end)
 }
 
+func stringsShareMemory2(s1, s2 string) bool {
+	// strings are 2 words each, 1st word is pointer to memory location of underlying byte array...
+	// so need to figure out how to access that pointer?
+	return &s1 == &s2
+}
+
 type sliceIface struct {
 	// https://research.swtch.com/godata
 	ptr unsafe.Pointer
@@ -41,10 +47,32 @@ func sumSlice(n []int) int {
 	sum := 0
 	for i := 0; i < slicemem.len; i++ {
 		scalar := uintptr(i)
-		next := *(*int)(unsafe.Pointer(uintptr(slicemem.ptr) + scalar*unsafe.Sizeof(slicemem.ptr)))
+		next := *(*int)(unsafe.Pointer(uintptr(slicemem.ptr) + scalar*unsafe.Sizeof(i)))
 		sum += next
 	}
 	return sum
+}
+
+// Implementation without using an interface, just using the raw bytes!
+func sumSlice2(n []int) int {
+	slicemem1 := (*int)(unsafe.Pointer(&n))
+	slicemem2 := (*int)(unsafe.Pointer(&slicemem1))
+	slicemem3 := (*int)(unsafe.Pointer(uintptr(unsafe.Pointer(&n))))
+	slicemem4 := *(*int)(unsafe.Pointer((uintptr(*(*uint64)(unsafe.Pointer(&n))))))
+	slicemem5 := *(*int)(unsafe.Pointer((*(*uint64)(unsafe.Pointer(&n)))))
+	slicemem6 := *(*int)(unsafe.Pointer((uintptr((unsafe.Pointer(&n))))))
+	slicemem := unsafe.Pointer(unsafe.Pointer(&n))
+	slicelen := unsafe.Pointer((uintptr(unsafe.Pointer(&n)) + unsafe.Sizeof(slicemem)))
+	firstEl := *(*int)(slicemem)
+	actualLen := *(*int)(slicelen)
+	fmt.Println(slicemem, slicelen, firstEl, actualLen, slicemem1, slicemem2, slicemem3, slicemem4, slicemem5, slicemem6)
+	// sum := 0
+	// for i := 0; i < slicemem.,len; i++ {
+	// 	scalar := uintptr(i)
+	// 	next := *(*int)(unsafe.Pointer(uintptr(slicemem.ptr) + scalar*unsafe.Sizeof(i)))
+	// 	sum += next
+	// }
+	return 0
 }
 
 // local copy of hmap from runtime/map.go

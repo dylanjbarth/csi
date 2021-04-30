@@ -24,6 +24,12 @@ func TestStringsShareMemory(t *testing.T) {
 		t.Errorf("Expected s1 (%s) and s2 (%s) to not share memory because they are different values and should have different memory locations.", s1, s2)
 	}
 
+	s11 := "foo"
+	s12 := "foo"
+	if !stringsShareMemory(&s11, &s12) {
+		t.Errorf("Expected s1 (%s) and s2 (%s) to share memory because they are the same values and should have the same memory locations.", s1, s2)
+	}
+
 	s3 := "foo2"
 	var s4 *string = (*string)(unsafe.Pointer(&s3)) // todo why does this work?
 	// // s4 := *(*string)(unsafe.Pointer(&s3))  // but this doesn't? seems like the one liner de-ref is copying elsewhere in memory?
@@ -39,6 +45,14 @@ func TestStringsShareMemory(t *testing.T) {
 	}
 }
 
+func TestStringsShareMemory2(t *testing.T) {
+	s1 := "foo"
+	s2 := "foo"
+	if stringsShareMemory2(s1, s2) {
+		t.Errorf("s1 and s2 shouldn't share memory")
+	}
+}
+
 func TestSumSlice(t *testing.T) {
 	tcase := []int{1, 2}
 	total := 3
@@ -50,6 +64,22 @@ func TestSumSlice(t *testing.T) {
 	tcase = []int{5, 10, 15}
 	total = 30
 	out = sumSlice(tcase)
+	if out != total {
+		t.Errorf("Expected sum to be %d but got %d", total, out)
+	}
+}
+
+func TestSumSlice2(t *testing.T) {
+	tcase := []int{1, 2}
+	total := 3
+	out := sumSlice2(tcase)
+	if out != total {
+		t.Errorf("Expected sum to be %d but got %d", total, out)
+	}
+
+	tcase = []int{5, 10, 15}
+	total = 30
+	out = sumSlice2(tcase)
 	if out != total {
 		t.Errorf("Expected sum to be %d but got %d", total, out)
 	}
