@@ -18,23 +18,21 @@ func newDbService(connection string) *dbService {
 	}
 }
 
-func (d *dbService) logState() {
-	d.lock.RLock()
-	defer d.lock.RUnlock()
-
+// Must establish read lock before calling this!
+func (d *dbService) logStateUnsafe() {
 	fmt.Printf("connection %q is healthy\n", d.connection)
 }
 
 func (d *dbService) takeSnapshot() {
 	d.lock.RLock()
-	defer d.lock.RUnlock()
 
 	fmt.Printf("Taking snapshot over connection %q\n", d.connection)
 
 	// Simulate slow operation
 	time.Sleep(time.Second)
 
-	d.logState()
+	d.logStateUnsafe()
+	d.lock.RUnlock()
 }
 
 func (d *dbService) updateConnection(connection string) {
@@ -68,3 +66,14 @@ func main() {
 
 	wg.Wait()
 }
+
+/*
+Problem
+
+$ go run -race example-8.go
+Taking snapshot over connection "127.0.0.1:3001"
+c^Csignal: interrupt
+
+deadlock establishing a read lock between the create snapshot and the logState.. just releasing the lock before reading the state works. Or depending on the original intention, could removing the locking from logstate and just release lock after we've logged state.
+
+*/
