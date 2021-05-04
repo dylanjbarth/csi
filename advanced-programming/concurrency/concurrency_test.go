@@ -2,6 +2,7 @@ package concurrency
 
 import (
 	"reflect"
+	"sync"
 	"testing"
 )
 
@@ -14,6 +15,8 @@ func TestConcurrencyStrategies(t *testing.T) {
 	cases := []counterService{
 		// &NoSync{start},  // this fails as expected, TODO is there a nice way to wrap this as an expected failure?
 		&AtomicCount{start},
+		&SyncMutexCount{sync.Mutex{}, start},
+		initChannelCounter(start),
 	}
 	for _, c := range cases {
 		// last := start
