@@ -3,19 +3,24 @@ package main
 import (
 	"fmt"
 	"sync"
-	"time"
 )
 
 var token sync.Mutex
 
 func main() {
-	for i := 0; i < 10; i++ {
+	for i := 0; ; {
+		token.Lock()
+		if i >= 1000 {
+			break
+		}
 		go func() {
 			fmt.Printf("launched goroutine %d\n", i)
+			i++
+			token.Unlock()
 		}()
 	}
 	// Wait for goroutines to finish
-	time.Sleep(time.Second)
+	// time.Sleep(time.Second)
 }
 
 /*
@@ -55,4 +60,6 @@ Problem:
 Solutions:
 - use a sync.Mutex for i
 - write i to a "job" channel and create goroutines by reading from that channel
+
+when using the sync.Mutex approach, we have to move any reads of the shared variables inside the lock. This is ugly but its concurrency safe!
 */
