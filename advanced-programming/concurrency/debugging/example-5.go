@@ -31,9 +31,9 @@ func query(endpoint string) string {
 func parallelQuery(endpoints []string) string {
 	results := make(chan string)
 	for i := range endpoints {
-		go func(i int) {
-			results <- query(endpoints[i])
-		}(i)
+		go func(e string) {
+			results <- query(e)
+		}(endpoints[i])
 	}
 	return <-results
 }
@@ -46,9 +46,47 @@ func main() {
 	}
 
 	// Simulate long-running server process that makes continuous queries
-	for {
+	for i := 0; i < 100; i++ {
 		fmt.Println(parallelQuery(endpoints))
 		delay := randomDelay(100)
 		time.Sleep(delay)
 	}
 }
+
+/*
+
+$ go run -race example-5.go
+418 I'm a teapot
+418 I'm a teapot
+200 OK
+200 OK
+200 OK
+200 OK
+200 OK
+200 OK
+418 I'm a teapot
+418 I'm a teapot
+
+Problem:
+
+- from the code we'd expect results to be evenly distributed, but they don't seem to be...
+- race detector isn't detecting anything, but if we look for shared variables inside goroutines, we see that i (the endpoint index) is used inside the goroutine, so that's probably a hint.
+
+
+Potential solution:
+
+- not 100% sure this is it, but parameterizing the endpoint itself in the goroutine instead of re-using i seems to provide better distribution
+
+$ go run -race example-5.go
+418 I'm a teapot
+418 I'm a teapot
+200 OK
+200 OK
+402 Payment Required
+200 OK
+200 OK
+200 OK
+418 I'm a teapot
+418 I'm a teapot
+
+*/
