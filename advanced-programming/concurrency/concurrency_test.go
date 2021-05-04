@@ -13,7 +13,7 @@ var max = outer * inner
 func TestConcurrencyStrategies(t *testing.T) {
 	var start uint64
 	cases := []counterService{
-		// &NoSync{start},  // this fails as expected, TODO is there a nice way to wrap this as an expected failure?
+		// &NoSync{start}, // this fails as expected, TODO is there a nice way to wrap this as an expected failure?
 		&AtomicCount{start},
 		&SyncMutexCount{sync.Mutex{}, start},
 		initChannelCounter(start),
@@ -48,3 +48,36 @@ func TestConcurrencyStrategies(t *testing.T) {
 		}
 	}
 }
+
+func BenchmarkNoSync(b *testing.B) {
+	c := &NoSync{0}
+	for n := 0; n < b.N; n++ {
+		c.getNext()
+	}
+}
+
+func BenchmarkAtomicCount(b *testing.B) {
+	c := &AtomicCount{0}
+	for n := 0; n < b.N; n++ {
+		c.getNext()
+	}
+}
+
+func BenchmarkSyncMutexCount(b *testing.B) {
+	c := &SyncMutexCount{sync.Mutex{}, 0}
+	for n := 0; n < b.N; n++ {
+		c.getNext()
+	}
+}
+
+func BenchmarkChannelCount(b *testing.B) {
+	c := initChannelCounter(0)
+	for n := 0; n < b.N; n++ {
+		c.getNext()
+	}
+}
+
+// BenchmarkNoSync-8               875835890                1.325 ns/op
+// BenchmarkAtomicCount-8          263140364                4.525 ns/op
+// BenchmarkSyncMutexCount-8       73563944                15.12 ns/op
+// BenchmarkChannelCount-8          3191479               365.9 ns/op
