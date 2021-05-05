@@ -25,7 +25,8 @@ type AtomicCount struct {
 }
 
 func (n *AtomicCount) getNext() uint64 {
-	return atomic.AddUint64(&n.counter, 1)
+	result := atomic.AddUint64(&n.counter, 1)
+	return result
 }
 
 type SyncMutexCount struct {

@@ -89,4 +89,6 @@ $ go run -race example-5.go
 418 I'm a teapot
 418 I'm a teapot
 
+^^^^ this was way off -- memory leak because the other two goroutines are sending and the nothing is receiving on the channel.
+
 */

@@ -60,6 +60,7 @@ Problem:
 Solutions:
 - use a sync.Mutex for i
 - write i to a "job" channel and create goroutines by reading from that channel
+- even simpler -- just pass i to the goroutine...
 
 when using the sync.Mutex approach, we have to move any reads of the shared variables inside the lock. This is ugly but its concurrency safe!
 */
