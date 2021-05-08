@@ -4,10 +4,14 @@ type footex struct {
 	locked bool
 }
 
-func (*footex) Lock() {
-
+func (f *footex) Lock() {
+	if !f.locked {
+		f.locked = true
+	}
 }
 
-func (*footex) Unlock() {
-
+func (f *footex) Unlock() {
+	if f.locked {
+		f.locked = false
+	}
 }

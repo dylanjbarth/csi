@@ -16,4 +16,10 @@ func TestFootex(t *testing.T) {
 		t.Error("Expected Lock to lock the token.")
 	}
 
+	// test that sync unlock works
+	tok.Unlock()
+	if tok.locked {
+		t.Error("Expected Unlock to unlock the token.")
+	}
+
 }
