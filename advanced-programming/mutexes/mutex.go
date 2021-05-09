@@ -7,13 +7,13 @@ import (
 	"sync/atomic"
 )
 
-var nptr uintptr
+var nptr uint64
 
 type footex struct {
-	owner uintptr // if set, function has called lock and not unlocked yet.
+	owner uint64 // if set, function has called lock and not unlocked yet.
 }
 
-// Compare and swap func CompareAndSwapUintptr(addr *uintptr, old, new uintptr) (swapped bool)
+// Compare and swap func CompareAndSwapUint64(addr *uint64, old, new uint64) (swapped bool)
 // if *addr == old {
 // 	*addr = new
 // 	return true
@@ -56,7 +56,7 @@ func (f *footex) Lock() {
 	gid := unsafeGetGoroutineId()
 	// fmt.Printf("Called from %d\n", gid)
 	for {
-		if atomic.CompareAndSwapUintptr(&f.owner, nptr, uintptr(gid)) {
+		if atomic.CompareAndSwapUint64(&f.owner, nptr, gid) {
 			// fmt.Println("Locked")
 			return
 		}
@@ -67,7 +67,7 @@ func (f *footex) Unlock() {
 	gid := unsafeGetGoroutineId()
 	// fmt.Printf("Called from %d\n", gid)
 	for {
-		if atomic.CompareAndSwapUintptr(&f.owner, uintptr(gid), nptr) {
+		if atomic.CompareAndSwapUint64(&f.owner, gid, nptr) {
 			// fmt.Println("Unlocked")
 			return
 		}
