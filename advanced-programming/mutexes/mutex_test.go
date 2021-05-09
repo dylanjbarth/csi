@@ -1,6 +1,7 @@
 package mutex
 
 import (
+	"sync"
 	"testing"
 )
 
@@ -36,3 +37,47 @@ func TestFootex(t *testing.T) {
 		t.Errorf("Expected max value to equal %d but got %d", expected, max)
 	}
 }
+
+func BenchmarkFootex(b *testing.B) {
+	d := 0
+	wg := sync.WaitGroup{}
+	tok := footex{}
+	wg.Add(b.N)
+	for i := 0; i < b.N; i++ {
+		go func(n int) {
+			defer wg.Done()
+			tok.Lock()
+			defer tok.Unlock()
+			d += 1
+		}(i)
+	}
+	wg.Wait()
+}
+
+func BenchmarkMutex(b *testing.B) {
+	d := 0
+	mu := sync.Mutex{}
+	wg := sync.WaitGroup{}
+	wg.Add(b.N)
+	for i := 0; i < b.N; i++ {
+		go func() {
+			defer wg.Done()
+			mu.Lock()
+			defer mu.Unlock()
+			d += 1
+		}()
+	}
+	wg.Wait()
+}
+
+// $ go test -bench=.
+// goos: darwin
+// goarch: amd64
+// pkg: ap/mutexes
+// cpu: Intel(R) Core(TM) i7-8559U CPU @ 2.70GHz
+// BenchmarkFootex-8          10000           5123974 ns/op
+// BenchmarkMutex-8         5518824               226.1 ns/op
+// PASS
+// ok      ap/mutexes      53.055s
+// So the sync.Mutex approach is 22,662 times faster :)
+// There is probably a much cleaner way to do this in pure go.
