@@ -1,38 +1,27 @@
 package mutex
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestFootex(t *testing.T) {
 	tok := footex{}
 
-	// test that default state is unlocked
-	if tok.locked {
-		t.Error("Expected default token to be unlocked")
-	}
-
-	// test that sync lock works
-	tok.Lock()
-	if !tok.locked {
-		t.Error("Expected Lock to lock the token.")
-	}
-
-	// test that sync unlock works
-	tok.Unlock()
-	if tok.locked {
-		t.Error("Expected Unlock to unlock the token.")
-	}
-
 	// Test concurrent access to shared var.
-	n_test := 1000
+	n_test := 2
 	d := uint32(0)
 	results := make(chan uint32, n_test)
 	for i := 0; i < n_test; i++ {
-		go func() {
+		t.Logf("Starting %d\n", i)
+		go func(n int) {
+			t.Logf("%d calling lock\n", n)
 			tok.Lock()
 			d += 1
 			results <- d
+			t.Logf("%d calling unlock\n", n)
 			tok.Unlock()
-		}()
+			t.Logf("%d returning\n", n)
+		}(i)
 	}
 	// Ensure that we incremented correctly and have the right max
 	var max uint32
