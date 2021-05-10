@@ -35,5 +35,6 @@ func (f *footex) Unlock() {
 			// fmt.Println("Unlocked")
 			return
 		}
+		panic("Cannot call unlock on an already unlocked mutex.")
 	}
 }
