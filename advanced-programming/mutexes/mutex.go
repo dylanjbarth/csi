@@ -19,22 +19,15 @@ type footex struct {
 
 func (f *footex) Lock() {
 	// if locked is nil, the caller gets the lock, otherwise continue to try
-	// fmt.Printf("Called from %d\n", gid)
 	for {
 		if atomic.CompareAndSwapUint32(&f.locked, nptr, 1) {
-			// fmt.Println("Locked")
 			return
 		}
 	}
 }
 
 func (f *footex) Unlock() {
-	// fmt.Printf("Called from %d\n", gid)
-	for {
-		if atomic.CompareAndSwapUint32(&f.locked, 1, nptr) {
-			// fmt.Println("Unlocked")
-			return
-		}
+	if !atomic.CompareAndSwapUint32(&f.locked, 1, nptr) {
 		panic("Cannot call unlock on an already unlocked mutex.")
 	}
 }
