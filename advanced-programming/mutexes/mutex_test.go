@@ -38,6 +38,28 @@ func TestFootex(t *testing.T) {
 	}
 }
 
+// This isn't a real test, just using it to step through a real mutex in the debugger
+func TestExploreRealMutex(t *testing.T) {
+	d := 0
+	n_tests := 2
+	mu := sync.Mutex{} // Returns a nil struct {state: 0, sema: 0}
+	wg := sync.WaitGroup{}
+	wg.Add(n_tests)
+	for i := 0; i < n_tests; i++ {
+		go func(n int) {
+			defer wg.Done()
+			t.Log(n)
+			// under the hood, this is atomically checking if the mutex state = 0 (unlocked) and if so, setting it to a locked state of 1.
+			mu.Lock()
+			d += 1
+			// cannot be called on an already unlocked mutex. also any goroutine can unlock, doesn't have to be the original locker!
+			// between the call to lock and unlock, something seems to have modified the mu.State. It increased from 1 after locking to 8 (!).
+			mu.Unlock()
+		}(i)
+	}
+	wg.Wait()
+}
+
 func BenchmarkFootex(b *testing.B) {
 	d := 0
 	wg := sync.WaitGroup{}
@@ -75,9 +97,7 @@ func BenchmarkMutex(b *testing.B) {
 // goarch: amd64
 // pkg: ap/mutexes
 // cpu: Intel(R) Core(TM) i7-8559U CPU @ 2.70GHz
-// BenchmarkFootex-8          10000           5123974 ns/op
-// BenchmarkMutex-8         5518824               226.1 ns/op
+// BenchmarkFootex-8        4704144               259.9 ns/op
+// BenchmarkMutex-8         5907390               206.8 ns/op
 // PASS
-// ok      ap/mutexes      53.055s
-// So the sync.Mutex approach is 22,662 times faster :)
-// There is probably a much cleaner way to do this in pure go.
+// ok      ap/mutexes      3.219s
