@@ -97,13 +97,3 @@ func BenchmarkMutex(b *testing.B) {
 	}
 	wg.Wait()
 }
-
-// $ go test -bench=.
-// goos: darwin
-// goarch: amd64
-// pkg: ap/mutexes
-// cpu: Intel(R) Core(TM) i7-8559U CPU @ 2.70GHz
-// BenchmarkFootex-8        4704144               259.9 ns/op
-// BenchmarkMutex-8         5907390               206.8 ns/op
-// PASS
-// ok      ap/mutexes      3.219s
