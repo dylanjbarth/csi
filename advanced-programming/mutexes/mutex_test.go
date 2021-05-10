@@ -61,10 +61,10 @@ func TestExploreRealMutex(t *testing.T) {
 }
 
 // Test runtime error calling unlock on an unlocked lock.
-func TestUnlockUnlockedLock(t *testing.T) {
-	mu := sync.Mutex{} // Returns a nil struct {state: 0, sema: 0}
-	mu.Unlock()
-}
+// func TestUnlockUnlockedLock(t *testing.T) {
+// 	mu := sync.Mutex{} // Returns a nil struct {state: 0, sema: 0}
+// 	mu.Unlock()
+// }
 
 func BenchmarkFootex(b *testing.B) {
 	d := 0
