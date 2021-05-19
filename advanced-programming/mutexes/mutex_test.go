@@ -41,7 +41,7 @@ func TestFootex(t *testing.T) {
 // This isn't a real test, just using it to step through a real mutex in the debugger
 func TestExploreRealMutex(t *testing.T) {
 	d := 0
-	n_tests := 2
+	n_tests := 7
 	mu := sync.Mutex{} // Returns a nil struct {state: 0, sema: 0}
 	wg := sync.WaitGroup{}
 	wg.Add(n_tests)
@@ -50,6 +50,7 @@ func TestExploreRealMutex(t *testing.T) {
 			defer wg.Done()
 			t.Log(n)
 			// under the hood, this is atomically checking if the mutex state = 0 (unlocked) and if so, setting it to a locked state of 1.
+			// if the lock is already locked, we go into lockSlow which is a hybrid spin and queue approach.
 			mu.Lock()
 			d += 1
 			// cannot be called on an already unlocked mutex. also any goroutine can unlock, doesn't have to be the original locker!

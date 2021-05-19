@@ -31,3 +31,6 @@ func (f *footex) Unlock() {
 		panic("Cannot call unlock on an already unlocked mutex.")
 	}
 }
+
+// What makes this so slow for 1M??
+// lots of contention for the lock, CPU cycles
