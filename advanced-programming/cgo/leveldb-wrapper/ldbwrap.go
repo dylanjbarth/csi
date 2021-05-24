@@ -47,3 +47,35 @@ func (ldb *LevelDB) Close() (*LevelDB, error) {
 	ldb.cptr = nil
 	return ldb, nil
 }
+
+func (ldb *LevelDB) Get(key string) (string, error) {
+	if !ldb.isOpen {
+		return "", errors.New("database must be opened before operations can be performed")
+	}
+	errptr := C.CString("")
+	opts := C.leveldb_readoptions_create()
+	vallen := C.ulong(0)
+	res := C.leveldb_get(ldb.cptr, opts, C.CString(key), C.ulong(len(key)), &vallen, &errptr)
+	err := C.GoString(errptr)
+	C.free(unsafe.Pointer(errptr))
+	if err != "" {
+		return "", fmt.Errorf("failed to get %s from DB. error is: %s", key, err)
+	}
+	// NB taking slice here to the length of vallen to trim whitespace.
+	return C.GoString(res)[0:vallen], nil
+}
+
+func (ldb *LevelDB) Put(key string, val string) error {
+	if !ldb.isOpen {
+		return errors.New("database must be opened before operations can be performed")
+	}
+	errptr := C.CString("")
+	opts := C.leveldb_writeoptions_create()
+	C.leveldb_put(ldb.cptr, opts, C.CString(key), C.ulong(len(key)), C.CString(val), C.ulong(len(val)), &errptr)
+	err := C.GoString(errptr)
+	C.free(unsafe.Pointer(errptr))
+	if err != "" {
+		return fmt.Errorf("failed to put %s,%s to DB. error is: %s", key, val, err)
+	}
+	return nil
+}
