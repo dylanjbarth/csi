@@ -54,3 +54,25 @@ $ xxd net.cap | head
 1. Was any data truncated?
 
   no data truncated because untruncated len = len
+
+
+## Ethernet headers 
+
+0. Determine the version of the wrapped IP datagram (IPv6 or IPv4) so we can parse that data.
+
+IPv4, we can determine this via the Ethertype => 0800 => https://en.wikipedia.org/wiki/EtherType => IPv4
+
+## IP Headers
+
+0. Determine the length of the IP header for each datagram. You will need this data later.
+
+  24 octets, per https://datatracker.ietf.org/doc/html/rfc791#section-3.1
+
+1. Determine the length of the datagram payload.
+
+  header.total_len - 24 bytes
+
+2. Determine the source and destination IP addresses, and verify that they match your expectations.
+3. Determine the transport protocol being used, and that all datagrams are using the same one.
+
+Protocol is 6 => https://datatracker.ietf.org/doc/html/rfc790 => tcp
