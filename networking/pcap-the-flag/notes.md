@@ -76,3 +76,20 @@ IPv4, we can determine this via the Ethertype => 0800 => https://en.wikipedia.or
 3. Determine the transport protocol being used, and that all datagrams are using the same one.
 
 Protocol is 6 => https://datatracker.ietf.org/doc/html/rfc790 => tcp
+
+## TCP Headers
+
+0. Determine the ports used to communicate. As a sanity check, ask yourself: How many ports are used? Which ports are they? Does this match your expectations?
+
+TODO 
+
+1. Determine the length of each transport header.
+
+
+
+2. Determine the sequence number for this packet.
+3. Extract the HTTP data from the packet and store it somewhere.
+
+Total IP datagram len - (TCP header len + IP Header len) = data section len.
+
+
