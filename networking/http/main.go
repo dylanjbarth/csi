@@ -5,20 +5,31 @@ import (
 	"syscall"
 )
 
-const maxConn, port = 10, 8001
+const maxConn, srcPort, dstPort = 10, 8001, 8002
 
-// echo server
 func main() {
 	// create socket to listen on
 	fd, err := syscall.Socket(syscall.AF_INET, syscall.SOCK_STREAM, 0)
 	if err != nil {
 		log.Fatalf("unable to create socket. %s", err)
 	}
-
-	// bind socket to port 80 for http listening
-	err = syscall.Bind(fd, &syscall.SockaddrInet4{Port: port, Addr: [4]byte{127, 0, 0, 1}})
+	// bind socket to source port
+	err = syscall.Bind(fd, &syscall.SockaddrInet4{Port: srcPort, Addr: [4]byte{127, 0, 0, 1}})
 	if err != nil {
 		log.Fatalf("unable to bind socket. %s", err)
+	}
+
+	destServer := syscall.SockaddrInet4{Port: dstPort, Addr: [4]byte{127, 0, 0, 1}}
+
+	// set up socket for communication with destination server
+	sfd, err := syscall.Socket(syscall.AF_INET, syscall.SOCK_STREAM, 0)
+	if err != nil {
+		log.Fatalf("unable to create socket. %s", err)
+	}
+	// establish a connection to our destination server
+	err = syscall.Connect(sfd, &destServer)
+	if err != nil {
+		log.Fatalf("unable to connect to dst server. %s", err)
 	}
 
 	// Set socket up to listen for connections
@@ -27,12 +38,13 @@ func main() {
 		log.Fatalf("listen failed. %s", err)
 	}
 
-	// accept incoming connections and reply with what we get forever
+	// accept first incoming connection
 	nfd, addr, aerr := syscall.Accept(fd)
 	if aerr != nil {
 		log.Fatalf("accept failed. %s", aerr)
 	}
-	log.Printf("Accepted conn from %+v. Created new socket %d", addr, nfd)
+	log.Printf("Accepted conn from %+v", addr)
+
 	for {
 		b := make([]byte, 1500) //https://stackoverflow.com/a/2614188 assuming ethernet packet here
 		n, frm, rerr := syscall.Recvfrom(nfd, b, 0)
@@ -41,8 +53,8 @@ func main() {
 		}
 		log.Printf("%d, %+v", n, frm)
 		log.Printf("%s", b)
-		log.Printf("Sending the same bytes back")
-		serr := syscall.Sendto(nfd, b, 0, addr)
+		log.Printf("Sending these bytes to our dest server")
+		serr := syscall.Sendto(sfd, b, 0, &destServer)
 		if serr != nil {
 			log.Fatalf("send failed. %s", serr)
 		}
