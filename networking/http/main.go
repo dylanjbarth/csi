@@ -52,9 +52,21 @@ func main() {
 			log.Fatalf("recvfrom failed. %s", rerr)
 		}
 		log.Printf("%d, %+v", n, frm)
-		log.Printf("%s", b)
+		log.Printf("Message received from client: %s", b)
 		log.Printf("Sending these bytes to our dest server")
 		serr := syscall.Sendto(sfd, b, 0, &destServer)
+		if serr != nil {
+			log.Fatalf("send failed. %s", serr)
+		}
+		// Get the response and forward it back to the original requester
+		n, frm, rerr = syscall.Recvfrom(sfd, b, 0)
+		if rerr != nil {
+			log.Fatalf("recvfrom failed. %s", rerr)
+		}
+		log.Printf("%d, %+v", n, frm)
+		log.Printf("Response from dest server: %s", b)
+		log.Printf("Sending these bytes to our client")
+		serr = syscall.Sendto(nfd, b, 0, addr)
 		if serr != nil {
 			log.Fatalf("send failed. %s", serr)
 		}
