@@ -57,13 +57,12 @@ func main() {
 		if strings.Contains(reqPath, *cachPathPtr) {
 			if val, ok := cache[reqPath]; ok {
 				log.Printf("Resp already cached, returning bytes directly to client.")
-				err := syscall.Sendto(nfd, val, 0, addr)
-				exitIfErr(err, "send failed.")
-				err = syscall.Close(nfd)
-				exitIfErr(err, "close failed.")
+				sendAndClose(nfd, val, addr)
 				continue
+			} else {
+				log.Printf("Not yet cached, forwarding request to dst server")
+				cacheIt = true
 			}
-			cacheIt = true
 		}
 
 		// connect proxy to our end server
@@ -94,14 +93,15 @@ func main() {
 
 		// finally forward resp back to the original requester
 		log.Printf("Sending these bytes to our client %d %+v", nfd, addr)
-		err = syscall.Sendto(nfd, b[:nBytes], 0, addr)
-		exitIfErr(err, "send failed.")
-		log.Printf("Inner loop complete")
-
-		// close connection with client server
-		err = syscall.Close(nfd)
-		exitIfErr(err, "close failed.")
+		sendAndClose(nfd, b[:nBytes], addr)
 	}
+}
+
+func sendAndClose(fd int, b []byte, to syscall.Sockaddr) {
+	err := syscall.Sendto(fd, b, 0, to)
+	exitIfErr(err, "send failed.")
+	err = syscall.Close(fd)
+	exitIfErr(err, "close failed.")
 }
 
 func exitIfErr(e error, msg string) {
