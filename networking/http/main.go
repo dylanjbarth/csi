@@ -5,21 +5,21 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"strings"
 	"syscall"
 )
 
-const maxConn, defaultSrcPort, defaultDstPort, maxBytes = 10, 8001, 8002, 1500
-
-// const cachePath = "cachethis/" // TODO obviously cleaner to allow this to be passed in
+const maxConn, defaultSrcPort, defaultDstPort, defaultCachePth, maxBytes = 10, 8001, 8002, "c/", 1500
 
 func main() {
 
 	srcPortPtr := flag.Int("port", defaultSrcPort, fmt.Sprintf("port you want proxy server to run on. default %d", defaultSrcPort))
 	dstPortPtr := flag.Int("dstPort", defaultDstPort, fmt.Sprintf("port you want proxy server to target as the origin server. default %d", defaultDstPort))
+	cachPathPtr := flag.String("cachPath", defaultCachePth, fmt.Sprintf("path you'd like proxy server to cache. default %s", defaultCachePth))
 	flag.Parse()
 
 	emptyBytes := make([]byte, maxBytes)
-	// cache := make(map[string][]byte)
+	cache := make(map[string][]byte)
 
 	// create socket to listen for clients on and bind it to our source port
 	fd, err := syscall.Socket(syscall.AF_INET, syscall.SOCK_STREAM, 0)
@@ -46,23 +46,25 @@ func main() {
 		// The return value will be 0 when the peer has performed an orderly shutdown.
 		if bytes.Equal(emptyBytes, b) {
 			log.Print("Got empty response from client, indicating orderly shutdown.")
-			break
+			continue
 		}
 
 		// determine if we need to cache it
-		// cacheIt := false
-		// respLines := strings.Split(fmt.Sprintf("%s", b), "\r\n")
-		// reqLine := strings.Split(respLines[0], " ")
-		// reqPath := reqLine[1]
-		// if strings.Contains(reqPath, cachePath) {
-		// 	if val, ok := cache[reqPath]; ok {
-		// 		log.Printf("Resp already cached, returning bytes directly to client.")
-		// 		err := syscall.Sendto(nfd, val, 0, addr)
-		// 		exitIfErr(err, "send failed.")
-		// 		break
-		// 	}
-		// 	cacheIt = true
-		// }
+		cacheIt := false
+		respLines := strings.Split(fmt.Sprintf("%s", b), "\r\n")
+		reqLine := strings.Split(respLines[0], " ")
+		reqPath := reqLine[1]
+		if strings.Contains(reqPath, *cachPathPtr) {
+			if val, ok := cache[reqPath]; ok {
+				log.Printf("Resp already cached, returning bytes directly to client.")
+				err := syscall.Sendto(nfd, val, 0, addr)
+				exitIfErr(err, "send failed.")
+				err = syscall.Close(nfd)
+				exitIfErr(err, "close failed.")
+				continue
+			}
+			cacheIt = true
+		}
 
 		// connect proxy to our end server
 		dstServer := syscall.SockaddrInet4{Port: *dstPortPtr, Addr: [4]byte{127, 0, 0, 1}}
@@ -77,7 +79,7 @@ func main() {
 		exitIfErr(err, "send failed.")
 
 		// Get the response
-		nBytes, _, err = syscall.Recvfrom(sfd, b, 0)
+		nBytes, _, err = syscall.Recvfrom(sfd, b, 0^syscall.MSG_WAITALL)
 		exitIfErr(err, "recvfrom failed.")
 		log.Printf("Response from dst server: %s", b[:nBytes])
 
@@ -85,10 +87,10 @@ func main() {
 		err = syscall.Close(sfd)
 		exitIfErr(err, "close failed.")
 
-		// if cacheIt {
-		// 	log.Printf("Storing this response in cache: %s", reqPath)
-		// 	cache[reqPath] = b[:nBytes]
-		// }
+		if cacheIt {
+			log.Printf("Storing this response in cache: %s", reqPath)
+			cache[reqPath] = b[:nBytes]
+		}
 
 		// finally forward resp back to the original requester
 		log.Printf("Sending these bytes to our client %d %+v", nfd, addr)
@@ -96,10 +98,9 @@ func main() {
 		exitIfErr(err, "send failed.")
 		log.Printf("Inner loop complete")
 
-		// close connection with dest server
+		// close connection with client server
 		err = syscall.Close(nfd)
 		exitIfErr(err, "close failed.")
-
 	}
 }
 
