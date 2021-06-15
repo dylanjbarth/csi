@@ -51,9 +51,7 @@ func main() {
 
 		// determine if we need to cache it
 		cacheIt := false
-		respLines := strings.Split(fmt.Sprintf("%s", b), "\r\n")
-		reqLine := strings.Split(respLines[0], " ")
-		reqPath := reqLine[1]
+		reqPath := getReqPath(b[:nBytes])
 		if strings.Contains(reqPath, *cachPathPtr) {
 			if val, ok := cache[reqPath]; ok {
 				log.Printf("Resp already cached, returning bytes directly to client.")
@@ -95,6 +93,12 @@ func main() {
 		log.Printf("Sending these bytes to our client %d %+v", nfd, addr)
 		sendAndClose(nfd, b[:nBytes], addr)
 	}
+}
+
+func getReqPath(req []byte) string {
+	respLines := strings.Split(fmt.Sprintf("%s", req), "\r\n")
+	reqLine := strings.Split(respLines[0], " ")
+	return reqLine[1]
 }
 
 func sendAndClose(fd int, b []byte, to syscall.Sockaddr) {
