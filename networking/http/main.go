@@ -17,30 +17,21 @@ func main() {
 
 	// create socket to listen for clients on and bind it to our source port
 	fd, err := syscall.Socket(syscall.AF_INET, syscall.SOCK_STREAM, 0)
-	if err != nil {
-		log.Fatalf("unable to create socket. %s", err)
-	}
+	exitIfErr(err, "unable to create socket.")
 	err = syscall.Bind(fd, &syscall.SockaddrInet4{Port: srcPort, Addr: [4]byte{127, 0, 0, 1}})
-	if err != nil {
-		log.Fatalf("unable to bind socket. %s", err)
-	}
+	exitIfErr(err, "unable to bind socket.")
 	err = syscall.Listen(fd, maxConn)
-	if err != nil {
-		log.Fatalf("listen failed. %s", err)
-	}
+	exitIfErr(err, "listen failed.")
+
 	// accept connections
-	nfd, addr, aerr := syscall.Accept(fd)
-	if aerr != nil {
-		log.Fatalf("accept failed. %s", aerr)
-	}
+	nfd, addr, err := syscall.Accept(fd)
+	exitIfErr(err, "accept failed.")
 	log.Printf("Accepted conn from %+v", addr)
 
 	for {
-		b := make([]byte, maxBytes) //https://stackoverflow.com/a/2614188 assuming ethernet packet here
-		_, _, rerr := syscall.Recvfrom(nfd, b, 0)
-		if rerr != nil {
-			log.Fatalf("recvfrom failed. %s", rerr)
-		}
+		b := make([]byte, maxBytes) //https://stackoverflow.com/a/2614188 assuming ethernet packet size here, 1500 bytes
+		_, _, err := syscall.Recvfrom(nfd, b, 0)
+		exitIfErr(err, "recvfrom failed.")
 		log.Printf("Message received from client: %s", b)
 
 		// The return value will be 0 when the peer has performed an orderly shutdown.
@@ -57,10 +48,8 @@ func main() {
 		if strings.Contains(reqPath, cachePath) {
 			if val, ok := cache[reqPath]; ok {
 				log.Printf("Resp already cached, returning bytes directly to client.")
-				serr := syscall.Sendto(nfd, val, 0, addr)
-				if serr != nil {
-					log.Fatalf("send failed. %s", serr)
-				}
+				err := syscall.Sendto(nfd, val, 0, addr)
+				exitIfErr(err, "send failed.")
 				break
 			}
 			cacheIt = true
@@ -69,33 +58,23 @@ func main() {
 		// connect proxy to our end server
 		dstServer := syscall.SockaddrInet4{Port: dstPort, Addr: [4]byte{127, 0, 0, 1}}
 		sfd, err := syscall.Socket(syscall.AF_INET, syscall.SOCK_STREAM, 0)
-		if err != nil {
-			log.Fatalf("unable to create socket. %s", err)
-		}
+		exitIfErr(err, "unable to create socket.")
 
 		err = syscall.Connect(sfd, &dstServer)
-		if err != nil {
-			log.Fatalf("unable to connect to dst server. %s", err)
-		}
+		exitIfErr(err, "unable to connect to dst server.")
 
 		log.Printf("Sending these bytes to our dst server")
-		serr := syscall.Sendto(sfd, b, 0, &dstServer)
-		if serr != nil {
-			log.Fatalf("send failed. %s", serr)
-		}
+		err = syscall.Sendto(sfd, b, 0, &dstServer)
+		exitIfErr(err, "send failed.")
 
 		// Get the response
-		_, _, rerr = syscall.Recvfrom(sfd, b, 0)
-		if rerr != nil {
-			log.Fatalf("recvfrom failed. %s", rerr)
-		}
+		_, _, err = syscall.Recvfrom(sfd, b, 0)
+		exitIfErr(err, "recvfrom failed.")
 		log.Printf("Response from dst server: %s", b)
 
 		// close connection with dest server
-		cerr := syscall.Close(sfd)
-		if cerr != nil {
-			log.Fatalf("close failed. %s", cerr)
-		}
+		err = syscall.Close(sfd)
+		exitIfErr(err, "close failed.")
 
 		if cacheIt {
 			log.Printf("Storing this response in cache: %s", reqPath)
@@ -104,9 +83,13 @@ func main() {
 
 		// finally forward resp back to the original requester
 		log.Printf("Sending these bytes to our client")
-		serr = syscall.Sendto(nfd, b, 0, addr)
-		if serr != nil {
-			log.Fatalf("send failed. %s", serr)
-		}
+		err = syscall.Sendto(nfd, b, 0, addr)
+		exitIfErr(err, "send failed.")
+	}
+}
+
+func exitIfErr(e error, msg string) {
+	if e != nil {
+		log.Fatalf("%s. %s", msg, e)
 	}
 }
