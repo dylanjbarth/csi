@@ -58,7 +58,7 @@ func main() {
 
 			// The return value will be 0 when the peer has performed an orderly shutdown.
 			if bytes.Equal(emptyBytes, b) {
-				log.Print("Got empty response from client, indicating orderly shutdown. Shutting down socket.")
+				log.Print("Got empty response from client, indicating orderly shutdown.")
 				break
 			}
 
