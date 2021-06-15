@@ -29,13 +29,15 @@ func main() {
 	err = syscall.Listen(fd, maxConn)
 	exitIfErr(err, "listen failed.")
 
-	// accept connections
-	nfd, addr, err := syscall.Accept(fd)
-	exitIfErr(err, "accept failed.")
-	log.Printf("Accepted conn from %+v", addr)
-
 	for {
-		log.Printf("Starting loop. Waiting to receive on proxy server connection.")
+
+		log.Printf("Starting loop. Waiting to receive a connection to proxy server.")
+
+		// accept connections
+		nfd, addr, err := syscall.Accept(fd)
+		exitIfErr(err, "accept failed.")
+		log.Printf("Accepted conn from %+v", addr)
+
 		b := make([]byte, maxBytes) //https://stackoverflow.com/a/2614188 assuming ethernet packet size here, 1500 bytes
 		nBytes, _, err := syscall.Recvfrom(nfd, b, 0)
 		exitIfErr(err, "recvfrom failed.")
@@ -92,7 +94,12 @@ func main() {
 		log.Printf("Sending these bytes to our client %d %+v", nfd, addr)
 		err = syscall.Sendto(nfd, b[:nBytes], 0, addr)
 		exitIfErr(err, "send failed.")
-		log.Printf("Loop complete")
+		log.Printf("Inner loop complete")
+
+		// close connection with dest server
+		err = syscall.Close(nfd)
+		exitIfErr(err, "close failed.")
+
 	}
 }
 
