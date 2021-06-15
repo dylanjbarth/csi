@@ -7,9 +7,10 @@ Expects a server to be running on port 8002 that it can forward client traffic t
 Connect to the proxy on port 8001 with curl, nc, or your browser. 
 
 ## TODO 
-
 - works for the initial request, but seems to get hung up on subsequent requests. 
 - also sometimes seeing that it's just hanging when sending bytes to the origin server, or sending bytes to the client. Dosen't seem to be deterministic. Maybe I just need to reboot all servers before re-testing? 
+
+NB I've moved around where I create the socket and connection with the destination server a lot to try and sort this out without much progress. I assumed I could re-use the socket but hit all kinds of broken pipe or socket not connected errors. 
 
 Example of failing on subsequent requests. 
 
