@@ -29,6 +29,7 @@ $ curl localhost:8001/c/thisiscached
 - Another issue, occasionally I'd see 
 
 ```$ curl localhost:8002/hey --output -
-curl: (18) transfer closed with 86 bytes remaining to read```
+curl: (18) transfer closed with 86 bytes remaining to read
+```
 
 which seems to have been solved by setting the MSG_WAITALL bit in recvfrom while waiting for responses. 
