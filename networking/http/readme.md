@@ -9,8 +9,9 @@ Connect to the proxy on port 8001 with curl, nc, or your browser.
 ## TODO 
 
 - works for the initial request, but seems to get hung up on subsequent requests. 
+- also sometimes seeing that it's just hanging when sending bytes to the origin server, or sending bytes to the client. Dosen't seem to be deterministic. Maybe I just need to reboot all servers before re-testing? 
 
-Example 
+Example of failing on subsequent requests. 
 
 ```$ go run main.go 
 2021/06/14 21:10:27 Accepted conn from &{Port:61577 Addr:[127 0 0 1] raw:{Len:0 Family:0 Port:0 Addr:[0 0 0 0] Zero:[0 0 0 0 0 0 0 0]}}
