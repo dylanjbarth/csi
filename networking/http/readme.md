@@ -33,3 +33,6 @@ curl: (18) transfer closed with 86 bytes remaining to read
 ```
 
 which seems to have been solved by setting the MSG_WAITALL bit in recvfrom while waiting for responses. 
+
+- why does my server hang sometimes sending bytes to the destination server (doesn't ever seem to timeout) - also seems non-deterministic because I can run it again and it handles many requests. 
+- seems to work perfectly fine with curl, so assuming this has to do with concurrency issues OR something about an incomplete response from my proxy server to the dest server and python is hanging there waiting for more data not acking 
