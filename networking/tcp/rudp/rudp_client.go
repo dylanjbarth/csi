@@ -14,7 +14,7 @@ type RUDPClient struct {
 }
 
 func (s *RUDPClient) OpenSocket() error {
-	fd, err := syscall.Socket(syscall.AF_INET, syscall.SOCK_DGRAM, 0)
+	fd, err := syscall.Socket(syscall.AF_INET, syscall.SOCK_DGRAM, syscall.IPPROTO_UDP)
 	if err != nil {
 		return err
 	}
@@ -41,6 +41,13 @@ func (s *RUDPClient) Send(b []byte) error {
 func (s *RUDPClient) Receive() ([]byte, int, error) {
 	r := make([]byte, 1500)
 	log.Printf("%s receiving bytes on socket %d", s.Name, s.fd)
-	n, _, err := syscall.Recvfrom(s.fd, r, 0)
+	n, _, err := syscall.Recvfrom(s.fd, r, syscall.MSG_DONTWAIT)
 	return r, n, err
+}
+
+func (s *RUDPClient) WaitUntilReady() error {
+	log.Printf("%s using select syscall to wait until ready on socket %d", s.Name, s.fd)
+	fdset := &syscall.FdSet{}
+	fdset.Bits[s.fd/32] |= 1 << (uint(s.fd) % 32) // got a little stuck making bitset but found: https://play.golang.org/p/LOd7q3aawd
+	return syscall.Select(s.fd+1, fdset, nil, nil, &syscall.Timeval{Sec: 1})
 }

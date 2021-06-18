@@ -1,9 +1,11 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"log"
+	"syscall"
 
 	"./rudp"
 )
@@ -26,7 +28,7 @@ go run main.go --sendPort 51948 --recPort 8000
 so that we send bytes to the proxy on 51948 and receive data from the proxy on port 8000
 */
 
-const defaultSendPort, defaultRecPort = 8000, 8001
+const defaultSendPort, defaultRecPort = 59971, 8000
 
 func main() {
 	sendPortPtr := flag.Int("sendPort", defaultSendPort, fmt.Sprintf("port to send on. default %d", defaultSendPort))
@@ -69,9 +71,22 @@ func main() {
 		if err != nil {
 			log.Fatalf("Failed to send. %s", err)
 		}
-		resp, n, err := receiver.Receive()
-		if err != nil {
-			log.Fatalf("receive failed. %s", err)
+		var resp []byte
+		var n int
+		for i := 0; i < 5; i++ {
+			resp, n, err = receiver.Receive()
+			if err == nil {
+				break
+			}
+			if !errors.Is(err, syscall.EAGAIN) {
+				log.Fatalf("received failed. %s", err)
+			} else {
+				log.Printf("Received %s. Blocking using select until it's ready and then try again.", err)
+				err = receiver.WaitUntilReady()
+				if err != nil {
+					log.Fatalf("select failed. %s", err)
+				}
+			}
 		}
 		log.Printf("Received %s from 127.0.0.1:%d", resp[:n], *recPortPtr)
 	}
