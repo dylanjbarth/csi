@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"sync"
 	"syscall"
 
 	"./rudp"
@@ -28,29 +29,27 @@ go run main.go --sendPort 51948 --recPort 8000
 so that we send bytes to the proxy on 51948 and receive data from the proxy on port 8000
 */
 
-const defaultSendPort, defaultRecPort = 59971, 8000
+const defaultSendPort, defaultRecPort = 49532, 8000
 
 func main() {
 	sendPortPtr := flag.Int("sendPort", defaultSendPort, fmt.Sprintf("port to send on. default %d", defaultSendPort))
 	recPortPtr := flag.Int("recPort", defaultRecPort, fmt.Sprintf("port to receive on. default %d", defaultRecPort))
 	flag.Parse()
 
-	receiver := rudp.RUDPClient{Name: "Receiver", SockPort: *recPortPtr}
-	sender := rudp.RUDPClient{Name: "Sender", SendToPort: *sendPortPtr, SockPort: 0}
-	defer receiver.Close()
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go receiver(*recPortPtr)
+	go sender(*sendPortPtr)
+	wg.Wait()
+}
+
+func sender(port int) {
+	sender := rudp.RUDPClient{Name: "Sender", SendToPort: port, SockPort: 0}
 	defer sender.Close()
 
-	err := receiver.OpenSocket()
-	if err != nil {
-		log.Fatalf("failed to open socket for receiver. %s", err)
-	}
-	err = sender.OpenSocket()
+	err := sender.OpenSocket()
 	if err != nil {
 		log.Fatalf("failed to open socket for sender. %s", err)
-	}
-	err = receiver.BindPort()
-	if err != nil {
-		log.Fatalf("failed to bind port. %s", err)
 	}
 	err = sender.BindPort()
 	if err != nil {
@@ -71,23 +70,38 @@ func main() {
 		if err != nil {
 			log.Fatalf("Failed to send. %s", err)
 		}
-		var resp []byte
-		var n int
-		for i := 0; i < 5; i++ {
-			resp, n, err = receiver.Receive()
-			if err == nil {
-				break
-			}
-			if !errors.Is(err, syscall.EAGAIN) {
-				log.Fatalf("received failed. %s", err)
-			} else {
-				log.Printf("Received %s. Blocking using select until it's ready and then try again.", err)
-				err = receiver.WaitUntilReady()
-				if err != nil {
-					log.Fatalf("select failed. %s", err)
-				}
+	}
+}
+
+func receiver(port int) {
+	receiver := rudp.RUDPClient{Name: "Receiver", SockPort: port}
+	defer receiver.Close()
+	err := receiver.OpenSocket()
+	if err != nil {
+		log.Fatalf("failed to open socket for receiver. %s", err)
+	}
+	err = receiver.BindPort()
+	if err != nil {
+		log.Fatalf("failed to bind port. %s", err)
+	}
+	var resp []byte
+	var n int
+
+	// receive in a nonblocking manner forever
+	for {
+		resp, n, err = receiver.Receive()
+		if err == nil {
+			log.Printf("Received %s from 127.0.0.1:%d", resp[:n], port)
+			continue
+		}
+		if !errors.Is(err, syscall.EAGAIN) {
+			log.Fatalf("receive failed. %s", err)
+		} else {
+			log.Printf("Received %s. Blocking using select until it's ready and then try again.", err)
+			err = receiver.WaitUntilReady()
+			if err != nil {
+				log.Fatalf("select failed. %s", err)
 			}
 		}
-		log.Printf("Received %s from 127.0.0.1:%d", resp[:n], *recPortPtr)
 	}
 }
