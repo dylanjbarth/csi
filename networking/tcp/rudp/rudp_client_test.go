@@ -1,12 +1,12 @@
-package main
+package rudp
 
 import (
 	"testing"
 )
 
-func TestClientE2E(t *testing.T) {
-	receiver := RUDPClient{port: 8000}
-	sender := RUDPClient{port: 8001, dstPort: 8000, dstAdd: [4]byte{127, 0, 0, 1}}
+func TestClientE2EDirectCommunication(t *testing.T) {
+	receiver := RUDPClient{SockPort: 8000}
+	sender := RUDPClient{SockPort: 0, SendToPort: 8000}
 	defer receiver.Close()
 	defer sender.Close()
 
