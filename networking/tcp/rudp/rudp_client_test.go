@@ -56,3 +56,15 @@ func TestClientE2EDirectCommunication(t *testing.T) {
 		t.Errorf("Expected data received to equal data sent but got %s", rsp)
 	}
 }
+
+func TestRUDPChecksum(t *testing.T) {
+	lrc := CalcChecksum([]byte("hey"))
+	lrc2 := CalcChecksum([]byte("heythere"))
+	lrc3 := CalcChecksum([]byte("heythere"))
+	if lrc == lrc2 {
+		t.Errorf("Expected checksums to be different but they were the same: %d <> %d", lrc, lrc2)
+	}
+	if lrc3 != lrc2 {
+		t.Errorf("Expected checksums to be same but they were the same: %d <> %d", lrc3, lrc2)
+	}
+}

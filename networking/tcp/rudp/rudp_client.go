@@ -1,6 +1,8 @@
 package rudp
 
 import (
+	"bytes"
+	"encoding/gob"
 	"log"
 	"syscall"
 )
@@ -11,6 +13,12 @@ type RUDPClient struct {
 	SendToPort int
 
 	fd int
+}
+
+type RUDPSegment struct {
+	Checksum   uint32
+	Contentlen uint32
+	Body       []byte
 }
 
 func (s *RUDPClient) OpenSocket() error {
@@ -35,7 +43,17 @@ func (s *RUDPClient) Close() error {
 
 func (s *RUDPClient) Send(b []byte) error {
 	log.Printf("%s sending bytes '%s' to 127.0.0.1:%d", s.Name, b, s.SendToPort)
-	return syscall.Sendto(s.fd, b, 0, &syscall.SockaddrInet4{Port: s.SendToPort, Addr: [4]byte{127, 0, 0, 1}})
+	var payload bytes.Buffer
+	g := gob.NewEncoder(&payload)
+	l := uint32(len(b))
+	ck := CalcChecksum(b)
+	err := g.Encode(RUDPSegment{ck, l, b})
+	if err != nil {
+		log.Fatalf("failed to encode rudp packet. %s", err)
+	} else {
+		log.Printf("Fully encoded segment %b, %+v", payload.Bytes(), payload.Bytes())
+	}
+	return syscall.Sendto(s.fd, payload.Bytes(), 0, &syscall.SockaddrInet4{Port: s.SendToPort, Addr: [4]byte{127, 0, 0, 1}})
 }
 
 func (s *RUDPClient) Receive() ([]byte, int, error) {
@@ -50,4 +68,13 @@ func (s *RUDPClient) WaitUntilReady() error {
 	fdset := &syscall.FdSet{}
 	fdset.Bits[s.fd/32] |= 1 << (uint(s.fd) % 32) // got a little stuck making bitset but found: https://play.golang.org/p/LOd7q3aawd
 	return syscall.Select(s.fd+1, fdset, nil, nil, &syscall.Timeval{Sec: 1})
+}
+
+func CalcChecksum(bytes []byte) uint32 {
+	// https://en.wikipedia.org/wiki/Longitudinal_redundancy_check
+	lrc := byte(0)
+	for _, b := range bytes {
+		lrc ^= b
+	}
+	return uint32(lrc)
 }

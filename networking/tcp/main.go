@@ -29,7 +29,7 @@ go run main.go --sendPort 51948 --recPort 8000
 so that we send bytes to the proxy on 51948 and receive data from the proxy on port 8000
 */
 
-const defaultSendPort, defaultRecPort = 49532, 8000
+const defaultSendPort, defaultRecPort = 52058, 8000
 
 func main() {
 	sendPortPtr := flag.Int("sendPort", defaultSendPort, fmt.Sprintf("port to send on. default %d", defaultSendPort))
@@ -58,12 +58,16 @@ func sender(port int) {
 
 	// Send some bytes
 	msgs := []string{
+		"!",
 		"hope",
 		"you",
 		"get",
 		"all",
 		"of",
 		"this",
+		"mi",
+		"amigo",
+		"¡",
 	}
 	for _, msg := range msgs {
 		err = sender.Send([]byte(msg))
