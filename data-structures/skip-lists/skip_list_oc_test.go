@@ -5,8 +5,8 @@ import (
 )
 
 func TestSkipListBasicInOrderLevel1(t *testing.T) {
-	sl := newSkipListOC(1)
-	cases := []string{"a", "b", "c"}
+	sl := newSkipListOC(3)
+	cases := []string{"a", "b", "c", "d", "e"}
 	for _, c := range cases {
 		sl.Put(c, c)
 	}

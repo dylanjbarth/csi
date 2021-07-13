@@ -1,13 +1,16 @@
 package main
 
-import "math/rand"
+import (
+	"fmt"
+	"math/rand"
+)
 
 // arbitrary max "height" for the skip list
 const p = 0.5
 
 type skipListNode struct {
 	item  Item
-	links []*skipListNode // turn this into a slice to indicate level
+	links []*skipListNode // the index of link indicates level, so index 0 = level 1, index 1 = level 2 and so forth.
 }
 
 type skipListOC struct {
@@ -21,13 +24,16 @@ func newSkipListOC(maxLevel int) *skipListOC {
 	return &skipListOC{maxLevel, 1, &skipListNode{links: []*skipListNode{nil}}}
 }
 
-// FindNext finds the node in the skip list that is equal to or greater than the key provided.
-// Returns the next node (or nil) and a slice of nodes indictating the path taken through the skip list.
-func (o *skipListOC) FindNext(key string) (*skipListNode, []*skipListNode) {
-	prevLinks := make([]*skipListNode, o.maxLevel)
+// Search finds the node in the skip list that is equal to or less than the key provided.
+// Returns the nearest node and a slice of nodes indictating the path taken through the skip list to get to the returned node.
+func (o *skipListOC) Search(key string) (*skipListNode, []*skipListNode) {
+	prevLinks := make([]*skipListNode, o.currLevel)
 	curr := o.head
+	// Work downward
 	for i := o.currLevel - 1; i >= 0; i-- {
-		for curr != nil && (curr.links[i] != nil && curr.links[i].item.Key >= key) {
+		// Work across
+		for curr != nil && (curr.links[i] != nil && curr.links[i].item.Key <= key) {
+			// Store the node we moved laterally from from
 			curr = curr.links[i]
 		}
 		if curr != nil {
@@ -37,8 +43,25 @@ func (o *skipListOC) FindNext(key string) (*skipListNode, []*skipListNode) {
 	return curr, prevLinks
 }
 
+func (o *skipListOC) prettyPrint() {
+	fmt.Printf("Current state of the skiplist: \n")
+	fmt.Printf("# Levels: %d/%d\n", o.currLevel, o.maxLevel)
+	curr := o.head
+	for i := o.currLevel - 1; i >= 0; i-- {
+		fmt.Printf("Level %d:", i)
+		local := curr
+		fmt.Printf(" HEAD -> ")
+		for local != nil && (local.links[i] != nil) {
+			fmt.Printf(" %s -> ", local.links[i].item.Key)
+			local = local.links[i]
+		}
+		fmt.Printf("\n")
+	}
+	fmt.Printf("End list\n")
+}
+
 func (o *skipListOC) Get(key string) (string, bool) {
-	curr, _ := o.FindNext(key)
+	curr, _ := o.Search(key)
 	if curr != nil && curr.item.Key == key {
 		return curr.item.Value, true
 	}
@@ -46,7 +69,8 @@ func (o *skipListOC) Get(key string) (string, bool) {
 }
 
 func (o *skipListOC) Put(key, value string) bool {
-	curr, prevLinks := o.FindNext(key)
+	o.prettyPrint()
+	curr, prevLinks := o.Search(key)
 
 	if curr.item.Key == key {
 		curr.item.Value = value
@@ -57,7 +81,7 @@ func (o *skipListOC) Put(key, value string) bool {
 	if rl > o.currLevel {
 		// fill in the blank space between head node and the new node.
 		for i := o.currLevel; i < rl; i++ {
-			prevLinks[i] = o.head
+			prevLinks = append(prevLinks, o.head)
 		}
 		o.currLevel = rl
 	}
@@ -78,7 +102,7 @@ func (o *skipListOC) Put(key, value string) bool {
 }
 
 func (o *skipListOC) Delete(key string) bool {
-	curr, prevLinks := o.FindNext(key)
+	curr, prevLinks := o.Search(key)
 	if curr != nil && curr.item.Key == key {
 		for i := len(prevLinks) - 1; i >= 0; i++ {
 			prevLinks[i].links[i] = curr.links[i]
