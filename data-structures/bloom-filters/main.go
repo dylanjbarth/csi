@@ -65,6 +65,6 @@ func main() {
 	falsePositiveRate := float64(falsePositives) / float64(numChecked)
 
 	fmt.Printf("Elapsed time: %s\n", time.Since(start))
-	fmt.Printf("Memory usage: %d bytes\n", b.memoryUsage())
+	fmt.Printf("Memory usage: %d bytes %d kb \n", b.memoryUsage(), b.memoryUsage()/100)
 	fmt.Printf("False positive rate: %0.2f%%\n", 100*falsePositiveRate)
 }

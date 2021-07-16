@@ -17,30 +17,8 @@ type bloomFilter interface {
 	memoryUsage() int
 }
 
-type trivialBloomFilter struct {
-	data []uint64
-}
-
-func newTrivialBloomFilter() *trivialBloomFilter {
-	return &trivialBloomFilter{
-		data: make([]uint64, 1000),
-	}
-}
-
-func (b *trivialBloomFilter) add(item string) {
-	// Do nothing
-}
-
-func (b *trivialBloomFilter) maybeContains(item string) bool {
-	// Technically, any item "might" be in the set
-	return true
-}
-
-func (b *trivialBloomFilter) memoryUsage() int {
-	return binary.Size(b.data)
-}
-
-// Use case: over-optimize for storing about half of the dictionary :)
+// Use case:
+// optimize for storing _very roughly_ half of the dictionary
 // $ wc -l /usr/share/dict/words
 // 235886 /usr/share/dict/words so ballpark N ~100k items.
 
@@ -86,20 +64,23 @@ func newAwesomeBloomFilter(m, k uint64) *awesomeBloomFilter {
 }
 
 func (b *awesomeBloomFilter) add(item string) {
-	hasher := fnv.New64()
-	hasher.Write([]byte(item))
-	hashed := hasher.Sum64()
-	bitToSet := hashed % b.m
-	idx := bitToSet / 64
-	innerIdx := bitToSet - (idx * 64)
-	bitSet := 1 << innerIdx
-	b.data[idx] |= uint64(bitSet)
+	idx, bitToSet := b.getBits(item)
+	b.data[idx] |= bitToSet
 	// fmt.Printf("%s => %d mod %d => %d\n", item, hashed, b.m, bitToSet)
 	// fmt.Printf("data[%d] flipping bit at index %d\n", idx, innerIdx)
 	// fmt.Printf("%b\n", b.data)
 }
 
 func (b *awesomeBloomFilter) maybeContains(item string) bool {
+	idx, bitToSet := b.getBits(item)
+	return (b.data[idx] & bitToSet) > 0
+}
+
+func (b *awesomeBloomFilter) memoryUsage() int {
+	return binary.Size(b.data)
+}
+
+func (b *awesomeBloomFilter) getBits(item string) (uint64, uint64) {
 	hasher := fnv.New64()
 	hasher.Write([]byte(item))
 	hashed := hasher.Sum64()
@@ -107,9 +88,5 @@ func (b *awesomeBloomFilter) maybeContains(item string) bool {
 	idx := bitToSet / 64
 	innerIdx := bitToSet - (idx * 64)
 	bitSet := 1 << innerIdx
-	return (b.data[idx] & uint64(bitSet)) > 0
-}
-
-func (b *awesomeBloomFilter) memoryUsage() int {
-	return binary.Size(b.data)
+	return idx, uint64(bitSet)
 }
