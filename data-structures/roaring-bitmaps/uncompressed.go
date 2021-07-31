@@ -25,15 +25,22 @@ func (b *uncompressedBitmap) Set(x uint32) {
 	b.data[idx] = b.data[idx] | (1 << bitToSet)
 }
 
+// TODO Union & intersection would be more annoying if we didn't know the bitmaps were the same length...
 func (b *uncompressedBitmap) Union(other *uncompressedBitmap) *uncompressedBitmap {
-	var data []uint64
+	var data = make([]uint64, len(b.data))
+	for i := 0; i < len(b.data); i++ {
+		data[i] = b.data[i] | other.data[i]
+	}
 	return &uncompressedBitmap{
 		data: data,
 	}
 }
 
 func (b *uncompressedBitmap) Intersect(other *uncompressedBitmap) *uncompressedBitmap {
-	var data []uint64
+	var data = make([]uint64, len(b.data))
+	for i := 0; i < len(b.data); i++ {
+		data[i] = b.data[i] & other.data[i]
+	}
 	return &uncompressedBitmap{
 		data: data,
 	}
