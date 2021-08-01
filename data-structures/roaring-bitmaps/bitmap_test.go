@@ -54,7 +54,7 @@ func TestBitmap(t *testing.T) {
 		}
 	}
 
-	/* TODO: Uncomment this section once you get compression / decompression working
+	// TODO: Uncomment this section once you get compression / decompression working
 	compressed := compress(b1)
 	t.Logf("Uncompressed size: %d words, compressed size: %d words\n", len(b1.data), len(compressed))
 	b := decompress(compressed)
@@ -63,5 +63,19 @@ func TestBitmap(t *testing.T) {
 			t.Fatalf("Compression then decompression produced inconsistent result for %d\n", x)
 		}
 	}
-	*/
+}
+
+func TestGetNextChunk(t *testing.T) {
+	b1 := newUncompressedBitmap()
+	b1.Set(1)
+	b1.Set(3)
+	b1.Set(65)
+	first := getNext63Bits(b1, 0)
+	second := getNext63Bits(b1, 1)
+	if first != 5 {
+		t.Errorf("Expected first 63 bits to equal 5 but got %d", first)
+	}
+	if second != 20 {
+		t.Errorf("Expected second 63 bits to equal 22 but got %d", second)
+	}
 }
