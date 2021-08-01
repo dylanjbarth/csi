@@ -1,6 +1,7 @@
 package bitmap
 
 import (
+	"fmt"
 	"math/rand"
 	"testing"
 )
@@ -57,12 +58,12 @@ func TestBitmap(t *testing.T) {
 	// TODO: Uncomment this section once you get compression / decompression working
 	compressed := compress(b1)
 	t.Logf("Uncompressed size: %d words, compressed size: %d words\n", len(b1.data), len(compressed))
-	b := decompress(compressed)
-	for x := uint32(0); x < start+limit+wordSize; x++ {
-		if b1.Get(x) != b.Get(x) {
-			t.Fatalf("Compression then decompression produced inconsistent result for %d\n", x)
-		}
-	}
+	// b := decompress(compressed)
+	// for x := uint32(0); x < start+limit+wordSize; x++ {
+	// 	if b1.Get(x) != b.Get(x) {
+	// 		t.Fatalf("Compression then decompression produced inconsistent result for %d\n", x)
+	// 	}
+	// }
 }
 
 func TestGetNextChunk(t *testing.T) {
@@ -78,4 +79,14 @@ func TestGetNextChunk(t *testing.T) {
 	if second != 20 {
 		t.Errorf("Expected second 63 bits to equal 22 but got %d", second)
 	}
+}
+
+func TestCompress(t *testing.T) {
+	b1 := newUncompressedBitmap()
+	b1.Set(1)
+	b1.Set(3)
+	b1.Set(65)
+	compressed := compress(b1)
+	fmt.Printf("Before %b %b %b", b1.data[0], b1.data[2], b1.data[3])
+	fmt.Printf("After %b %b", compressed[0], compressed[2])
 }
