@@ -56,8 +56,8 @@ func TestBitmap(t *testing.T) {
 	}
 
 	// TODO: Uncomment this section once you get compression / decompression working
-	compressed := compress(b1)
-	t.Logf("Uncompressed size: %d words, compressed size: %d words\n", len(b1.data), len(compressed))
+	// compressed := compress(b1)
+	// t.Logf("Uncompressed size: %d words, compressed size: %d words\n", len(b1.data), len(compressed))
 	// b := decompress(compressed)
 	// for x := uint32(0); x < start+limit+wordSize; x++ {
 	// 	if b1.Get(x) != b.Get(x) {
@@ -87,6 +87,10 @@ func TestCompress(t *testing.T) {
 	b1.Set(3)
 	b1.Set(65)
 	compressed := compress(b1)
-	fmt.Printf("Before %b %b %b", b1.data[0], b1.data[2], b1.data[3])
-	fmt.Printf("After %b %b", compressed[0], compressed[2])
+	fmt.Println("Before")
+	b1.PrettyPrint()
+	fmt.Println("After")
+	for i := 0; i < len(compressed); i++ {
+		fmt.Printf("%064b\n", compressed[i])
+	}
 }

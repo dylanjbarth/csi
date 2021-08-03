@@ -1,5 +1,7 @@
 package bitmap
 
+import "fmt"
+
 const wordSize = 64
 
 type uncompressedBitmap struct {
@@ -12,6 +14,12 @@ func newUncompressedBitmap() *uncompressedBitmap {
 	// return &uncompressedBitmap{data: make([]uint64, 67_108_864)}
 	// Try empty strategy so that compress is faster
 	return &uncompressedBitmap{data: []uint64{}}
+}
+
+func (b *uncompressedBitmap) PrettyPrint() {
+	for i := 0; i < len(b.data); i++ {
+		fmt.Printf("%064b\n", b.data[i])
+	}
 }
 
 func (b *uncompressedBitmap) Get(x uint32) bool {
