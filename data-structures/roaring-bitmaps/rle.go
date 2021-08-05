@@ -1,8 +1,6 @@
 package bitmap
 
 import (
-	// "fmt"
-	"fmt"
 	"math"
 )
 
@@ -16,20 +14,20 @@ func compress(b *uncompressedBitmap) []uint64 {
 	b.PrettyPrint()
 	for i := 0; i < n_iterations; i++ {
 		chunk := getNext63Bits(b, offset)
-		fmt.Printf("i: %d Chunk: %064b\n", i, chunk)
+		// fmt.Printf("i: %d Chunk: %064b\n", i, chunk)
 		if chunk == 0 {
 			n_runs += 1
 			offset += uint64(chunksize)
 			continue
 		} else if n_runs > 0 {
 			// flush n_runs before processing this chunk.
-			fmt.Printf("i: %d Flushing %d 0s => %064b\n", i, n_runs, uint64(0))
+			// fmt.Printf("i: %d Flushing %d 0s => %064b\n", i, n_runs, uint64(0))
 			out = append(out, uint64(n_runs))
 			n_runs = 0
 		}
 		// flip signal bit to indicate literal and then write the rest of the 63 bits here
 		toWrite := chunk | 1<<63
-		fmt.Printf("Adding: %064b\n", toWrite)
+		// fmt.Printf("Adding: %064b\n", toWrite)
 		out = append(out, toWrite)
 		offset += uint64(chunksize)
 	}
@@ -38,6 +36,52 @@ func compress(b *uncompressedBitmap) []uint64 {
 
 func decompress(compressed []uint64) *uncompressedBitmap {
 	var data []uint64
+	var tmpBits uint64
+	var nBits uint64
+	for i := 0; i < len(compressed); i++ {
+		curr := compressed[i]
+		signalBit := curr & (1 << 63)
+		// fmt.Printf("curr %064b\n", curr)
+		// fmt.Printf("signal bit %064b\n", signalBit)
+		if signalBit > 0 { // next 63 bits are literal
+			if nBits == 0 {
+				tmpBits = curr << 1
+				nBits = 63
+				// fmt.Printf("tmpBits %064b\n", tmpBits)
+			} else {
+				// flush tmpBits
+				// clear signal bit
+				curr = (curr << 1) >> 1 // lol
+				emptySlots := 64 - nBits
+				data = append(data, tmpBits|(curr>>(63-emptySlots)))
+				// now that we flushed, store the other half
+				tmpBits = curr << (emptySlots + 63)
+				nBits = 63 - emptySlots
+				// fmt.Printf("tmpBits %064b\n", tmpBits)
+			}
+		} else { // this is a count of runs of 64 0s
+			// flush the runs of 0s
+			for j := 0; j < int(curr); j++ {
+				if nBits == 0 {
+					tmpBits = 0
+					nBits = 63
+					// fmt.Printf("tmpBits %064b\n", tmpBits)
+				} else {
+					// flush tmpBits
+					emptySlots := 64 - nBits
+					data = append(data, tmpBits)
+					// now that we flushed, store the other half
+					tmpBits = 0
+					nBits = 63 - emptySlots
+					// fmt.Printf("tmpBits %064b\n", tmpBits)
+				}
+			}
+		}
+	}
+	// Final flush
+	if nBits > 0 {
+		data = append(data, tmpBits)
+	}
 	return &uncompressedBitmap{
 		data: data,
 	}
@@ -53,37 +97,37 @@ func getNext63Bits(b *uncompressedBitmap, bitoffset uint64) uint64 {
 	b1_inner_idx := start % 64
 	b2_idx := end / 64
 	b2_inner_idx := end % 64
-	fmt.Printf("Bitoffset, start, end: %d %d %d \n", bitoffset, start, end)
-	fmt.Printf("Block index: [b%d:%d-b%d:%d] \n", b1_idx, b1_inner_idx, b2_idx, b2_inner_idx)
+	// fmt.Printf("Bitoffset, start, end: %d %d %d \n", bitoffset, start, end)
+	// fmt.Printf("Block index: [b%d:%d-b%d:%d] \n", b1_idx, b1_inner_idx, b2_idx, b2_inner_idx)
 	if b1_idx == b2_idx { // in this rare situation, we can just extract the element and clean off the starting or ending bit.
-		fmt.Printf("Single element approach:\n")
-		fmt.Printf("Element: %064b\n", b.data[b1_idx])
+		// fmt.Printf("Single element approach:\n")
+		// fmt.Printf("Element: %064b\n", b.data[b1_idx])
 		if b1_inner_idx == 0 { // clear end bit
 			val = b.data[b1_idx] >> 1
 		} else { // clear starting bit
 			val = b.data[b1_idx] &^ (1 << 63)
 		}
-		fmt.Printf("Val: %064b\n", val)
+		// fmt.Printf("Val: %064b\n", val)
 	} else { // in the more common situation we have to join bits from neighboring indexes, clearing bits from both
-		fmt.Printf("Two element approach:\n")
-		fmt.Printf("First: %064b\n", b.data[b1_idx])
+		// fmt.Printf("Two element approach:\n")
+		// fmt.Printf("First: %064b\n", b.data[b1_idx])
 		first := b.data[b1_idx] << b1_inner_idx
-		fmt.Printf("First shifted: %064b\n", first)
+		// fmt.Printf("First shifted: %064b\n", first)
 		second := uint64(0)
 		if len(b.data)-1 > int(b2_idx) {
-			fmt.Printf("Second: %064b\n", second)
+			// fmt.Printf("Second: %064b\n", second)
 			second = b.data[b2_idx] >> b2_inner_idx
-			fmt.Printf("Second shifted: %064b\n", second)
+			// fmt.Printf("Second shifted: %064b\n", second)
 		} else {
-			fmt.Printf("Second: %064b\n", second)
-			fmt.Printf("Second shifted: %064b\n", second)
+			// fmt.Printf("Second: %064b\n", second)
+			// fmt.Printf("Second shifted: %064b\n", second)
 		}
 		// create a complete uint64 from the two indexes.
-		fmt.Printf("Val: %064b\n", val)
+		// fmt.Printf("Val: %064b\n", val)
 		val = first | second
 		// Finally, shift right to only return 63 bits.
 		val = val >> 1
-		fmt.Printf("Val: %064b\n", val)
+		// fmt.Printf("Val: %064b\n", val)
 	}
 	return val
 }

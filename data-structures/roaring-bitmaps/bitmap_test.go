@@ -1,7 +1,6 @@
 package bitmap
 
 import (
-	"fmt"
 	"math/rand"
 	"testing"
 )
@@ -56,14 +55,14 @@ func TestBitmap(t *testing.T) {
 	}
 
 	// TODO: Uncomment this section once you get compression / decompression working
-	// compressed := compress(b1)
-	// t.Logf("Uncompressed size: %d words, compressed size: %d words\n", len(b1.data), len(compressed))
-	// b := decompress(compressed)
-	// for x := uint32(0); x < start+limit+wordSize; x++ {
-	// 	if b1.Get(x) != b.Get(x) {
-	// 		t.Fatalf("Compression then decompression produced inconsistent result for %d\n", x)
-	// 	}
-	// }
+	compressed := compress(b1)
+	t.Logf("Uncompressed size: %d words, compressed size: %d words\n", len(b1.data), len(compressed))
+	b := decompress(compressed)
+	for x := uint32(0); x < start+limit+wordSize; x++ {
+		if b1.Get(x) != b.Get(x) {
+			t.Fatalf("Compression then decompression produced inconsistent result for %d\n", x)
+		}
+	}
 }
 
 func TestGetNextChunk(t *testing.T) {
@@ -81,16 +80,19 @@ func TestGetNextChunk(t *testing.T) {
 	}
 }
 
-func TestCompress(t *testing.T) {
+func TestCompressDecompress(t *testing.T) {
 	b1 := newUncompressedBitmap()
 	b1.Set(1)
 	b1.Set(3)
 	b1.Set(65)
 	compressed := compress(b1)
-	fmt.Println("Before")
+	// fmt.Println("Original")
 	b1.PrettyPrint()
-	fmt.Println("After")
+	// fmt.Println("Compressed")
 	for i := 0; i < len(compressed); i++ {
-		fmt.Printf("%064b\n", compressed[i])
+		// fmt.Printf("%064b\n", compressed[i])
 	}
+	decompressed := decompress(compressed)
+	// fmt.Println("Decompressed")
+	decompressed.PrettyPrint()
 }
