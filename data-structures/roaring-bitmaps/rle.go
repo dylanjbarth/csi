@@ -87,47 +87,44 @@ func decompress(compressed []uint64) *uncompressedBitmap {
 	}
 }
 
-// Returns next 63 bits from bit offset as a uint64
+// Returns next 63 bits from bit offset as a uint64 (where the most significant bit will be 0 and can be ignored)
 func getNext63Bits(b *uncompressedBitmap, bitoffset uint64) uint64 {
 	start := bitoffset
-	end := start + 63 // End index isn't inclusive
+	end := start + 63
 	var val uint64
 	// Each element in b.data is 64 bits, so we need to find the starting place and overflow to the next element if needed.
 	b1_idx := start / 64
 	b1_inner_idx := start % 64
 	b2_idx := end / 64
 	b2_inner_idx := end % 64
-	// fmt.Printf("Bitoffset, start, end: %d %d %d \n", bitoffset, start, end)
-	// fmt.Printf("Block index: [b%d:%d-b%d:%d] \n", b1_idx, b1_inner_idx, b2_idx, b2_inner_idx)
+	fmt.Printf("Bitoffset, start, end: %d %d %d \n", bitoffset, start, end)
+	fmt.Printf("Block index: [b%d:%d-b%d:%d] \n", b1_idx, b1_inner_idx, b2_idx, b2_inner_idx)
 	if b1_idx == b2_idx { // in this rare situation, we can just extract the element and clean off the starting or ending bit.
-		// fmt.Printf("Single element approach:\n")
-		// fmt.Printf("Element: %064b\n", b.data[b1_idx])
+		fmt.Printf("Single element approach:\n")
+		fmt.Printf("Element: %064b\n", b.data[b1_idx])
 		if b1_inner_idx == 0 { // clear end bit
-			val = b.data[b1_idx] >> 1
+			val = b.data[b1_idx] &^ (1)
 		} else { // clear starting bit
-			val = b.data[b1_idx] &^ (1 << 63)
+			val = b.data[b1_idx] << 1
 		}
-		// fmt.Printf("Val: %064b\n", val)
+		fmt.Printf("Val: %064b\n", val)
 	} else { // in the more common situation we have to join bits from neighboring indexes, clearing bits from both
-		// fmt.Printf("Two element approach:\n")
-		// fmt.Printf("First: %064b\n", b.data[b1_idx])
+		fmt.Printf("Two element approach:\n")
+		fmt.Printf("First: %064b\n", b.data[b1_idx])
 		first := b.data[b1_idx] << b1_inner_idx
-		// fmt.Printf("First shifted: %064b\n", first)
+		fmt.Printf("First shifted: %064b\n", first)
 		second := uint64(0)
 		if len(b.data)-1 > int(b2_idx) {
-			// fmt.Printf("Second: %064b\n", second)
-			second = b.data[b2_idx] >> b2_inner_idx
-			// fmt.Printf("Second shifted: %064b\n", second)
+			fmt.Printf("Second: %064b\n", b.data[b2_idx])
+			second = b.data[b2_idx] >> (64 - b1_inner_idx)
+			fmt.Printf("Second shifted: %064b\n", second)
 		} else {
-			// fmt.Printf("Second: %064b\n", second)
-			// fmt.Printf("Second shifted: %064b\n", second)
+			fmt.Printf("Second: %064b\n", second)
+			fmt.Printf("Second shifted: %064b\n", second)
 		}
-		// create a complete uint64 from the two indexes.
-		// fmt.Printf("Val: %064b\n", val)
-		val = first | second
-		// Finally, shift right to only return 63 bits.
-		val = val >> 1
-		// fmt.Printf("Val: %064b\n", val)
+		// create a complete uint64 from the two indexes, 0ing out end bit.
+		val = (first | second) &^ (1)
+		fmt.Printf("Val: %064b\n", val)
 	}
 	return val
 }

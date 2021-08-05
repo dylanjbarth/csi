@@ -67,17 +67,20 @@ func TestBitmap(t *testing.T) {
 
 func TestGetNextChunk(t *testing.T) {
 	b1 := newUncompressedBitmap()
+	b1.Set(0)
 	b1.Set(1)
 	b1.Set(3)
 	b1.Set(65)
+	b1.Set(103)
+	b1.Set(223)
 	first := getNext63Bits(b1, 0)
-	second := getNext63Bits(b1, 1)
-	if first != 5 {
-		t.Errorf("Expected first 63 bits to equal 5 but got %d", first)
-	}
-	if second != 20 {
-		t.Errorf("Expected second 63 bits to equal 22 but got %d", second)
-	}
+	second := getNext63Bits(b1, 63)
+	third := getNext63Bits(b1, 126)
+	fmt.Println("Original")
+	b1.PrettyPrint()
+	fmt.Printf("Offset 0: %064b\n", first)
+	fmt.Printf("Offset 63: %064b\n", second)
+	fmt.Printf("Offset 126: %064b\n", third)
 }
 
 func TestCompressDecompress(t *testing.T) {
@@ -85,14 +88,16 @@ func TestCompressDecompress(t *testing.T) {
 	b1.Set(1)
 	b1.Set(3)
 	b1.Set(65)
+	b1.Set(103)
+	b1.Set(223)
 	compressed := compress(b1)
-	// fmt.Println("Original")
+	fmt.Println("Original")
 	b1.PrettyPrint()
-	// fmt.Println("Compressed")
+	fmt.Println("Compressed")
 	for i := 0; i < len(compressed); i++ {
-		// fmt.Printf("%064b\n", compressed[i])
+		fmt.Printf("%064b\n", compressed[i])
 	}
 	decompressed := decompress(compressed)
-	// fmt.Println("Decompressed")
+	fmt.Println("Decompressed")
 	decompressed.PrettyPrint()
 }
