@@ -11,7 +11,7 @@ func compress(b *uncompressedBitmap) []uint64 {
 	offset := uint64(0)
 	chunksize := uint64(63)
 	n_iterations := int(math.Ceil(float64(len(b.data)) * 64 / float64(chunksize)))
-	b.PrettyPrint()
+	// b.PrettyPrint()
 	for i := 0; i < n_iterations; i++ {
 		chunk := getNext63Bits(b, offset)
 		// fmt.Printf("i: %d Chunk: %064b\n", i, chunk)
@@ -42,7 +42,6 @@ func decompress(compressed []uint64) *uncompressedBitmap {
 		curr := compressed[i]
 		signalBit := curr & (1 << 63)
 		// fmt.Printf("curr %064b\n", curr)
-		// fmt.Printf("signal bit %064b\n", signalBit)
 		if signalBit > 0 { // next 63 bits are literal
 			if nBits == 0 {
 				tmpBits = curr << 1
@@ -54,11 +53,11 @@ func decompress(compressed []uint64) *uncompressedBitmap {
 				curr = curr &^ (1 << 63)
 				// fmt.Printf("curr %064b\n", curr)
 				emptySlots := 64 - nBits
-				toAdd := tmpBits | (curr >> (63 - emptySlots))
+				toAdd := tmpBits | (curr >> (63 - emptySlots)) // add one to account for the signal bit
 				data = append(data, toAdd)
 				// fmt.Printf("toAdd %064b\n", toAdd)
 				// now that we flushed, store the other half
-				tmpBits = curr << emptySlots
+				tmpBits = curr << (emptySlots + 1)
 				nBits = 63 - emptySlots
 				// fmt.Printf("tmpBits %064b\n", tmpBits)
 			}
