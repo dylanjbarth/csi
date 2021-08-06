@@ -57,38 +57,10 @@ func TestBitmap(t *testing.T) {
 	// TODO: Uncomment this section once you get compression / decompression working
 	compressed := compress(b1)
 	t.Logf("Uncompressed size: %d words, compressed size: %d words\n", len(b1.data), len(compressed))
-	// fmt.Println("Original")
-	// b1.PrettyPrint()
 	b := decompress(compressed)
-	// fmt.Println("Compressed")
-	// for i := 0; i < len(compressed); i++ {
-	// 	fmt.Printf("%064b\n", compressed[i])
-	// }
 	for x := uint32(0); x < start+limit+wordSize; x++ {
 		if b1.Get(x) != b.Get(x) {
 			t.Fatalf("Compression then decompression produced inconsistent result for %d\n", x)
 		}
 	}
 }
-
-// func TestGetNextChunk(t *testing.T) {
-// 	b1 := newUncompressedBitmap()
-// 	b1.Set(0)
-// 	b1.Set(1)
-// 	b1.Set(3)
-// 	b1.Set(65)
-// 	b1.Set(103)
-// 	b1.Set(223)
-// 	first := getNext63Bits(b1, 0)
-// 	second := getNext63Bits(b1, 63)
-// 	third := getNext63Bits(b1, 126)
-// 	fourth := getNext63Bits(b1, 189)
-// 	fifth := getNext63Bits(b1, 253)
-// 	fmt.Println("Original")
-// 	b1.PrettyPrint()
-// 	fmt.Printf("Offset 0: %064b\n", first)
-// 	fmt.Printf("Offset 63: %064b\n", second)
-// 	fmt.Printf("Offset 126: %064b\n", third)
-// 	fmt.Printf("Offset 189: %064b\n", fourth)
-// 	fmt.Printf("Offset 253: %064b\n", fifth)
-// }
