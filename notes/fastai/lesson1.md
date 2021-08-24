@@ -53,3 +53,8 @@ Limitations:
 - model can only learn patterns based on what you show it 
 - data must be labeled 
 
+
+Other resources: 
+- https://spinningup.openai.com/en/latest/index.html
+- https://www.deeplearningbook.org/
+- 
