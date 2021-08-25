@@ -203,3 +203,22 @@ what are the trade-offs between cooperative and preemptive scheduling? in coop s
 What are the tradeoffs between the various CPU scheduling policies?
 
 tradeoff is going to be between performance (responsiveness and turnaround time) and fairness. In the real world, the CPU doesn't know how long a process will take, so SJF and STCF aren't applicable as pure policies, but using MLFQ the OS can get a nice balance of fairness across processes and performance by learning about how each process is going to be using it's CPU time and how long its taking.  
+
+
+# Class scratchpad on process execution and scheduling: 
+
+unix + BSD - Berkeley software distribution - shell, network stack, c compiler, etc. 
+
+BSD vs GNU versions of grep 
+
+Mac => BSD lineage vs Ubuntu GNU lineage 
+
+Lions' commentary on UNIX 
+
+This is a longish paper on the Evolution of Unix Architecture https://ieeexplore.ieee.org/document/8704965
+
+https://cs3210.cc.gatech.edu/r/unix6.pdf 
+
+warsus.github.io/lions- 
+
+the completely fair scheduler - task that we decide to schedule is based on how "overdue" it is for scheduling and the amount of time it gets on the CPU corresponds to that as well. 
