@@ -222,3 +222,53 @@ https://cs3210.cc.gatech.edu/r/unix6.pdf
 warsus.github.io/lions- 
 
 the completely fair scheduler - task that we decide to schedule is based on how "overdue" it is for scheduling and the amount of time it gets on the CPU corresponds to that as well. 
+
+# Virtual memory readings
+
+## Address Spaces 
+
+address space - running programs view of memory in the system (what it's allowed to write to). 
+OS maps virtual memory exposed to the process to the real physical memory on the system which the process has no visibility into. 
+
+stack = automatic memory because it's managed for you by the compiler. to add to stack just declare an variable. 
+heap = long lived memory explicitly managed by the program - use malloc and free (nb these are not system calls, they are library calls) under the hood the memory manager is using system calls brk and sbrk to ask the OS to adjust program break (location of the end of the heap). mmap is another related syscall used to create an anon memory region associated with swap space. 
+
+## Address Translation 
+address transaltion often referred to as dynamic relocation - just translating virtual address to physical address. this can happen even after the process has started running. 
+
+to do address translation, OS sets the base register and the hardware can use this to offset the virtual mem address to the physical address. Combined with limit/bounds register, this provides hardware support for memory protection. MMU - memory management unit - part of the CPU that helps with address translation. 
+
+OS tracks available memory so it can allocate memory to processes. Could be other data structures, but free list is one. 
+
+Hardware support: provides base and bounds registers, and a "processor status word" to indicate kernel or user mode. Also provides area of memory to call OS exception handler when out of bounds exception runs. 
+
+Qs 
+- why would the OS move a processes memory? just to fit more stuff (eg de-fragment - could this happen though with fixed size pages?) A: yes, it's to avoid fragmentation. 
+
+## segmentation
+in order to avoid internal fragmentation, put each section (code, heap, stack) at different places in physical memory so that they don't write toward each other. Thus a segmentation fault is when you try and access memory outside of the segment your process is allowed to access. 
+
+## paging 
+
+segmentation - chopping things up into variable sized pieces but this leads to fragmentation 
+paging - chopping things up into fixed-sized pieces, physical memory broken into page frames. 
+
+this provides more flexibility and simplicity 
+
+OS records how virtual memory maps to physical memory using a per-process data structure called a page table. 
+
+A virtual address is broken into the virtual page number (2 most significant bits) and an offset. The VPN is translated into a physical page number in the page table, and the offset tells you the byte within the page that you want. 
+
+So you need N significant bits depending on how many virtual pages you have per process. 
+
+basic implementation on modern machines would take up a bunch of memory just for address translation and would also be slow, many steps to look it up in main memory. 
+
+how to make this faster? TLB: translation-lookaside buffer, part of MMU and basically a hardware cache of popular virtual address lookups - aka address translation cache.
+
+CISC vs RISC - Complex Instruction Set Computing vs Reduced Instruction Set Computing – simple hardware primitives or advanced – give control to the compiler so it can figure out how to make performant code or expose a complex API to it. 
+
+cache replacement: least recently used LRU, or random policy. 
+
+question: how does the memory in the TLB and in the page table get marked as unallocated once process terminates? I think this would just be a case of the OS itself not caring anymore about the process so even though the data is there it's not tracked and can be overwritten. 
+
+how does the OS manage "fairness" in TLB hits? eg what if a process is switched onto the CPU and makes a ton of memory accesses, replacing cached values for the previous process. 
