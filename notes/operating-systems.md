@@ -234,7 +234,7 @@ stack = automatic memory because it's managed for you by the compiler. to add to
 heap = long lived memory explicitly managed by the program - use malloc and free (nb these are not system calls, they are library calls) under the hood the memory manager is using system calls brk and sbrk to ask the OS to adjust program break (location of the end of the heap). mmap is another related syscall used to create an anon memory region associated with swap space. 
 
 ## Address Translation 
-address transaltion often referred to as dynamic relocation - just translating virtual address to physical address. this can happen even after the process has started running. 
+address translation often referred to as dynamic relocation - just translating virtual address to physical address. this can happen even after the process has started running. 
 
 to do address translation, OS sets the base register and the hardware can use this to offset the virtual mem address to the physical address. Combined with limit/bounds register, this provides hardware support for memory protection. MMU - memory management unit - part of the CPU that helps with address translation. 
 
@@ -272,3 +272,103 @@ cache replacement: least recently used LRU, or random policy.
 question: how does the memory in the TLB and in the page table get marked as unallocated once process terminates? I think this would just be a case of the OS itself not caring anymore about the process so even though the data is there it's not tracked and can be overwritten. 
 
 how does the OS manage "fairness" in TLB hits? eg what if a process is switched onto the CPU and makes a ton of memory accesses, replacing cached values for the previous process. 
+ 
+# IPC
+
+pipe is a system call that provides two file descriptors, one for reading and one for writing. Unidirectional data channel. Data written is buffered by the kernel until it is read. pipe, open, read, write
+
+fifo is a named pipe that unrelated processes can open and read/write data to. created using syscall mknod which is for creating special files. Still unidirectional. 
+
+unix sockets is a 2 way communications pipe. supports wide variety of domains (eg internet, filesystem). socket, bind, recv
+
+## Exercise 
+
+current architecture uses pipes - 
+
+##  Files
+
+abstraction: group of blocks on disk = file, normally 4kb blocks. want to be able to give them a name. persistence. hierarchy (but also graph because you can have links), also access control. performance (not doing linear scans.)
+
+on a spinning disk, random access is slow because you have to physically move to the next disk sector. fastest is the next byte on the disk, next fastest is somewhere else on the same disk, and slowest is moving the disk arm to another platter. so for files, you'd want to group your files on same disk so that you have generally fast access. 
+
+need to store metadata 
+
+global table of descriptions the OS uses to count open files, if two processes touch the same file they have separate descriptors but pointing to the same inode.
+
+feedback on class: 
+
+- sorry had a friend in town
+- AWS glacier is a VERY niche usecase. 
+
+
+## VMs vs Containers
+
+Hypervisor - responsible for creating abstraction to the operating system that it has sole access to the underlying hardware. 
+
+Container = operating system level virtualization, isolation of processes. VM is isolation of the machine. 
+
+containers are not virtual machines, instead think of them as isolated processes. 
+
+2 types of hypervisors – type 1 direct link to the infra (eg Hyper-V or KVM), type 2 runs as app on host system (VirtualBox, VMWare) – Type 1 are more efficient because they can bypass the host OS. Type 2 still pretty efficient. 
+
+Hypervisor actually sits on the host OS? https://www.youtube.com/watch?v=TvnZTi_gaNc 
+
+## Class notes from VM - hypervisors etc. 
+
+original use case for VMs was actually just about portability so that new machines could run old software. VMWare brought back vms sold people on being able to run multiple OSs side by side. 
+
+- how do you create the illusion of all the OSs getting the interrputs?
+
+hypervisor makes scheduling decisions and swaps between guest OSes to schedule them on the CPU. hypervisor registers trap handlers, then guest OS boots, tries to register trap handler, can't. 
+
+Xen, KVM. Derived from Linux. Nitro - AWS Hypervisor trying to get to bare metal basically, make the hypervisor transparent. 
+
+
+- how do you virtualize the CPU?
+
+
+
+- how do you virtualize the memory? 
+
+
+- paravirtualization: 
+
+hypercalls are like system calls in this mode, allowing the OS to communicate with the hypervisor. 
+
+
+
+
+Feedback: 
+
+- would be great to explore a usecase like AWS EC2 as an example. 
+
+
+Questions for check in- 
+
+- with some tool like EC2, how many vms are they actually running on a machine? what am I actually getting when I pay for a vCpus etc. 
+- is there anything interesting that hypervisors do for scheduling? same idea as linux scheduler eg tunable? 
+- with hypervisor memory mapping, if the guest OSs have different page sizes, does that introduce more overhead to the virtual memory mapping process? 
+- Oz - how did you get so knowledgeable at systems programming and computer history? something in work history or just through CSI?
+
+
+# Containers 
+- dotcloud became Docker - open sourcing it was a smart idea
+OS provides two ways to control processes - what they can see and what they can do
+- namespaces: what can you see? eg process ids, file system, users, ipc, networking. 
+- cgroup (aka control groups): CPU, Memory, Disk I/O, Network, Device permissions
+
+container image: creating the filesystem that the container can see, maybe some additional configuration like env vars. 
+
+## Container exercise
+
+- namespacing can be achieved through flags to clone syscall (namespace manpage helpful here https://man7.org/linux/man-pages/man7/namespaces.7.html)
+
+namespace controls what the process can see - isolated the process giving it the view that it has it's own instance of a global resource like network devices, mount points, process ids, users and groups, hostname, etc. 
+
+How to test each one?
+
+IPC - can we send a signal to a process running outside of the container? eg kill -9 {pid}
+- this doesn't seem to work- I can still kill a process running outside the container. Does it only work for message queues? 
+Network - can we see network devices using ifconfig inside the container?
+
+
