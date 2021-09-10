@@ -371,4 +371,4 @@ IPC - can we send a signal to a process running outside of the container? eg kil
 - this doesn't seem to work- I can still kill a process running outside the container. Does it only work for message queues? 
 Network - can we see network devices using ifconfig inside the container?
 
-
+cgroups = linux control groups - groups processes and monitor/limit access to resources. controlled via cgroupfs interface (pseudo filesystem)

@@ -6,6 +6,9 @@
 #include <unistd.h>
 
 #define STACK_SIZE 65536
+#define MAX_PROCS 5
+
+void update_cgroup();
 
 struct child_config
 {
@@ -16,6 +19,7 @@ struct child_config
 /* Entry point for child after `clone` */
 int child(void *arg)
 {
+  update_cgroup();
   struct child_config *config = arg;
   if (execvpe(config->argv[0], config->argv, NULL))
   {
@@ -23,6 +27,24 @@ int child(void *arg)
     return -1;
   }
   return 0;
+}
+
+void update_cgroup()
+{
+  // Write pid to cgroup file
+  char *cgroup_path = "/sys/fs/cgroup/pids/contained/cgroup.procs";
+  FILE *f = fopen(cgroup_path, "w");
+  if (f == NULL)
+  {
+    printf("Error opening file %s. Please ensure the directory exists.\n", cgroup_path);
+    exit(1);
+  }
+  fprintf(f, "%d", getpid());
+  fclose(f);
+  // Control number of allowed processes for group
+  f = fopen("/sys/fs/cgroup/pids/contained/pids.max", "w");
+  fprintf(f, "%d", MAX_PROCS);
+  fclose(f);
 }
 
 int main(int argc, char **argv)
