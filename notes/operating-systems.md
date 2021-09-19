@@ -335,9 +335,6 @@ Xen, KVM. Derived from Linux. Nitro - AWS Hypervisor trying to get to bare metal
 
 hypercalls are like system calls in this mode, allowing the OS to communicate with the hypervisor. 
 
-
-
-
 Feedback: 
 
 - would be great to explore a usecase like AWS EC2 as an example. 
@@ -365,10 +362,61 @@ container image: creating the filesystem that the container can see, maybe some 
 
 namespace controls what the process can see - isolated the process giving it the view that it has it's own instance of a global resource like network devices, mount points, process ids, users and groups, hostname, etc. 
 
+PID namespace: can only see other processes in the same PID namespace. 
+
+Network namespace: sockets, routing tables, network interfaces (eg localhost). 
+
+IPC namespace: semaphores, message queues, shared memory 
+
+user namespace: map uids - in the container to another user in the host machine. 
+
+namespaces live within a process => /proc/{pid}/ns
+
 How to test each one?
 
 IPC - can we send a signal to a process running outside of the container? eg kill -9 {pid}
 - this doesn't seem to work- I can still kill a process running outside the container. Does it only work for message queues? 
 Network - can we see network devices using ifconfig inside the container?
 
-cgroups = linux control groups - groups processes and monitor/limit access to resources. controlled via cgroupfs interface (pseudo filesystem)
+cgroups = linux control groups - groups processes and monitor/limit access to resources. controlled via cgroupfs interface (pseudo filesystem), eg count and limit memory, cpu, block IO, network IO, can do some ACL on devices, "crowd control". These are called subsystems, organized into hierarchies. 
+
+the host OS tracks how much of a resource (eg memory) is used by a cgroup (the processes within that group), set limits - soft limits are just reclaimed under pressure but hard limits will just trigger a kill from the OOM killer in the OS. 
+
+setting the cpuset cgroup – pin a cgroup to a specific CPU 
+
+block IO - keep track of IO per block device for each block device 
+
+net IO - only works for egress – 
+
+devices cgroup - eg prevents container from reading / writing from /dev/random 
+
+freezer cgroup - crowd control - like SIGSTOP but process doesn't know it has been stopped. Allows you to freeze / unfreeze without any sideaffects (good for job scheduling). 
+
+can move processes between cgroups 
+
+copy-on-write storage - allows creation of container quickly instead of having to copy the entire filesystem. 
+
+capabilities - root vs non-root into fine grained rights, eg without dangerous bits. fine grained RBAC control. 
+
+container runtimes that use namespaces and cgroups
+
+* LXC - userland tools, container is a directory in /var/lib/lxc, hard for developers to use because you need to be able to write computer profiles. used a lot by sysadmins.Docker used to shell out to this actually. 
+* systemd-nspawn - 
+* docker engine - manages cotnainers, images etc. 
+* rkt, runc - back to the basics, just focus on container execution, remove API, build system, image management. Basically just running containers - takes files in local directory and runs containers. 
+
+container runtimes that use something other than namespaces and cgroups 
+
+* open VZ - 
+* Jails / Zones on freeBSD - emphasis on security, good for hosting providers, bad for developers 
+
+chroot, LXR?, LXC? huge pages? NUMA? how do users/groups actually work on the kernel? what does it mean to map root in a container to a random user on the host system? SELinux / AppARmor - "if you want containers that actually contain" 
+
+chroot: change the apparent root directory for current process - system call 
+
+cards to make: 
+
+- chroot sys call 
+- namespaces
+- cgroups 
+- 
