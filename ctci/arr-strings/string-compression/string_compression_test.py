@@ -1,4 +1,4 @@
-from string_compression import compress
+from string_compression import compress, compress_str_concat
 import unittest
 
 
@@ -16,6 +16,7 @@ class TestCompression(unittest.TestCase):
             _input, expected = case
             with self.subTest(case=f"{_input} => {expected}"):
                 self.assertEqual(compress(_input), expected)
+                self.assertEqual(compress_str_concat(_input), expected)
 
 
 if __name__ == '__main__':

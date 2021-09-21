@@ -14,3 +14,14 @@ def compress(s: str):
         else:
             counts.append([c, 1])
     return "".join([f"{item[0]}{item[1]}" for item in counts])
+
+
+def compress_str_concat(s: str):
+    output = ""
+    count = 0
+    for i, c in enumerate(s):
+        count += 1
+        if i + 1 == len(s) or s[i+1] != c:
+            output += f"{c}{count}"
+            count = 0
+    return output
