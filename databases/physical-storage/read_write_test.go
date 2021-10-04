@@ -5,8 +5,8 @@ import "testing"
 func TestWriterAndReader(t *testing.T) {
 	// Write a few records to a file
 	path := "./test_db"
-	sw := NewStorageWriter(path)
-	tups := []*Tuple{makeTuple("Hello", "World"), makeTuple("bienvenidos", "mundo"), makeTuple("foo", "bar")}
+	sw := NewStorageWriter(path, 2)
+	tups := []*Tuple{makeTuple("Hello", "World"), makeTuple("hola", "mundo"), makeTuple("Salut", "le Monde")}
 	for _, t := range tups {
 		sw.Write(*t)
 	}
@@ -18,9 +18,9 @@ func TestWriterAndReader(t *testing.T) {
 	if sr.header.DataSize != uint16(expected) {
 		t.Errorf("Expected data size of %d but got %d", expected, sr.header.DataSize)
 	}
-	expected = IndexLen * 3
-	if sr.header.IndexSize != uint16(expected) {
-		t.Errorf("Expected index offset size of %d but got %d", expected, sr.header.IndexSize)
+	expected = 3 * 6 // data size uint16 * number & size of columns
+	if sr.header.IndexTotalSize != uint16(expected) {
+		t.Errorf("Expected index offset size of %d but got %d", expected, sr.header.IndexTotalSize)
 	}
 	expected = 3
 	if len(sr.index) != 3 {
@@ -28,14 +28,25 @@ func TestWriterAndReader(t *testing.T) {
 	}
 
 	first := sr.Next()
-	expectedStr := "HelloWorld"
-	if first != expectedStr {
-		t.Errorf("Expected index len of %s but got %s", expectedStr, first)
+	expectedStr := []string{"Hello", "World"}
+	for i, s := range expectedStr {
+		if s != first[i] {
+			t.Errorf("Expected first tuple returned to contain %s at index %d but got %s", s, i, first[i])
+		}
 	}
 	second := sr.Next()
-	expectedStr = "bienvenidosmundo"
-	if second != expectedStr {
-		t.Errorf("Expected index len of %s but got %s", expectedStr, second)
+	expectedStr = []string{"hola", "mundo"}
+	for i, s := range expectedStr {
+		if s != second[i] {
+			t.Errorf("Expected second tuple returned to contain %s at index %d but got %s", s, i, second[i])
+		}
+	}
+	third := sr.Next()
+	expectedStr = []string{"Salut", "le Monde"}
+	for i, s := range expectedStr {
+		if s != third[i] {
+			t.Errorf("Expected third tuple returned to contain %s at index %d but got %s", s, i, third[i])
+		}
 	}
 }
 

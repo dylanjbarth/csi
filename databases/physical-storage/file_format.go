@@ -1,8 +1,7 @@
 package storage
 
-const HeaderLen = 4
-const IndexLen = 4
-const FileSize = 256
+const HeaderLen = 6
+const FileSize = 128 // small for testing
 
 type File struct {
 	Header PageHeader
@@ -11,11 +10,12 @@ type File struct {
 }
 
 type PageHeader struct {
-	IndexSize uint16
-	DataSize  uint16
+	IndexEntrySize uint16
+	IndexTotalSize uint16
+	DataSize       uint16
 }
 
 type IndexEntry struct {
-	DataStart uint16
-	DataLen   uint16
+	DataSize      uint16
+	ColumnOffsets []uint16
 }

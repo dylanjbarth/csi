@@ -26,33 +26,53 @@ func NewStorageReader(path string) *StorageReader {
 }
 
 // Next returns the next record or empty if none remain.
-func (sr *StorageReader) Next() string {
+func (sr *StorageReader) Next() []string {
 	if sr.next >= len(sr.index) {
-		return ""
+		return []string{}
 	}
 	entry := sr.index[sr.next]
-	b := make([]byte, (*entry).DataLen)
-	_, err := sr.fp.ReadAt(b, int64((*entry).DataStart))
-	if err != nil {
-		log.Fatalf("StorageReader failed to read data entry %d. Error: %s", sr.next, err)
+	output := []string{}
+	bytesRemaining := (*entry).DataSize
+	for i, offset := range (*entry).ColumnOffsets {
+		var b []byte
+		if i == len((*entry).ColumnOffsets)-1 {
+			b = make([]byte, bytesRemaining)
+		} else {
+			bufSize := (*entry).ColumnOffsets[i+1] - offset
+			b = make([]byte, bufSize)
+			bytesRemaining = bytesRemaining - bufSize
+		}
+		_, err := sr.fp.ReadAt(b, int64((*entry).ColumnOffsets[i]))
+		if err != nil {
+			log.Fatalf("StorageReader failed to read data entry %d. Error: %s", sr.next, err)
+		}
+		output = append(output, string(b))
 	}
 	sr.next++
-	return string(b)
+	return output
 }
 
 func (sr *StorageReader) readHeader() {
-	b := make([]byte, 4) // header
+	b := make([]byte, HeaderLen) // header
 	_, err := sr.fp.ReadAt(b, 0)
 	if err != nil {
 		log.Fatalf("StorageReader failed to read header. Error: %s", err)
 	}
-	sr.header = &PageHeader{IndexSize: binary.BigEndian.Uint16(b[:2]), DataSize: binary.BigEndian.Uint16(b[2:])}
-	ib := make([]byte, sr.header.IndexSize) // index buffer
+	sr.header = &PageHeader{IndexEntrySize: binary.BigEndian.Uint16(b[:2]), IndexTotalSize: binary.BigEndian.Uint16(b[2:4]), DataSize: binary.BigEndian.Uint16(b[4:])}
+
+	ib := make([]byte, sr.header.IndexTotalSize) // index buffer
 	_, err = sr.fp.ReadAt(ib, HeaderLen)
 	if err != nil {
 		log.Fatalf("StorageReader failed to read indices. Error: %s", err)
 	}
-	for i := 0; i < int(sr.header.IndexSize); i = i + IndexLen {
-		sr.index = append(sr.index, &IndexEntry{DataStart: binary.BigEndian.Uint16(ib[i : i+2]), DataLen: binary.BigEndian.Uint16(ib[i+2:])})
+
+	// iterate by index entry sizes, starting with the first index.
+	for index := 0; index < int(sr.header.IndexTotalSize); index = index + int(sr.header.IndexEntrySize) {
+		// The first two bytes are the data size, and then the column offsets follow in 2 byte increments.
+		entry := IndexEntry{DataSize: binary.BigEndian.Uint16(ib[index : index+2]), ColumnOffsets: []uint16{}}
+		for offset := 2; offset < int(sr.header.IndexEntrySize); offset = offset + 2 {
+			entry.ColumnOffsets = append(entry.ColumnOffsets, binary.BigEndian.Uint16(ib[index+offset:index+offset+2]))
+		}
+		sr.index = append(sr.index, &entry)
 	}
 }
