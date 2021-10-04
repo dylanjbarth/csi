@@ -6,10 +6,6 @@ import (
 	"os"
 )
 
-const headerLen = 4
-const indexLen = 4
-const fileSize = 256
-
 type StorageWriter struct {
 	fp   *os.File
 	file *File
@@ -20,7 +16,7 @@ func NewStorageWriter(path string) *StorageWriter {
 	if err != nil {
 		log.Fatalf("StorageWriter failed to create %s for writing. Error: %s", path, err)
 	}
-	// assume the file is empty, re-opening a previously written to file out of scope.
+	// treat file as empty, re-opening a previously written to file out of scope.
 	sw := StorageWriter{
 		fp:   fp,
 		file: &File{},
@@ -34,9 +30,9 @@ func (sw *StorageWriter) Write(t Tuple) bool {
 	/*
 		1. TODO Calculate free space remaining - error if no space
 		2. Write tuple index, write tuple, update page header with new offsets.
+		3. TODO ideally this would be an atomic write instead of 3 syscalls.
+		4. TODO lots of small writes, would be more efficient to use bufio
 	*/
-
-	log.Printf("Writing %s", t)
 	dataSize := 0
 	// Calculate size of just the values
 	for _, v := range t.Values {
@@ -44,15 +40,15 @@ func (sw *StorageWriter) Write(t Tuple) bool {
 	}
 
 	// Update our index
-	indexPos := headerLen + sw.file.Header.IndexSize
-	indexEntry := IndexEntry{DataStart: uint16(fileSize - dataSize - int(sw.file.Header.DataSize)), DataLen: uint16(dataSize)}
+	indexPos := HeaderLen + sw.file.Header.IndexSize
+	indexEntry := IndexEntry{DataStart: uint16(FileSize - dataSize - int(sw.file.Header.DataSize)), DataLen: uint16(dataSize)}
 	sw.file.Index = append(sw.file.Index, indexEntry)
 	b := make([]byte, 4)
 	binary.BigEndian.PutUint16(b[:2], indexEntry.DataStart)
 	binary.BigEndian.PutUint16(b[2:], indexEntry.DataLen)
 	_, err := sw.fp.WriteAt(b, int64(indexPos))
 	if err != nil {
-		log.Fatalf("StorageWriter failed to update index. Error: %e", err)
+		log.Fatalf("StorageWriter failed to update index. Error: %s", err)
 	}
 
 	// Write the data
@@ -61,13 +57,13 @@ func (sw *StorageWriter) Write(t Tuple) bool {
 		dPos := int64(indexEntry.DataStart + uint16(offset))
 		_, err := sw.fp.WriteAt([]byte(v.StringValue), dPos)
 		if err != nil {
-			log.Fatalf("StorageWriter failed to write tuple value %s. Error: %e", v.StringValue, err)
+			log.Fatalf("StorageWriter failed to write tuple value %s. Error: %s", v.StringValue, err)
 		}
 		offset += binary.Size([]byte(v.StringValue))
 	}
 
 	// Update page header:
-	sw.file.Header.IndexSize += indexLen
+	sw.file.Header.IndexSize += IndexLen
 	sw.file.Header.DataSize += uint16(dataSize)
 	sw.writeHeader()
 	return false
@@ -76,7 +72,7 @@ func (sw *StorageWriter) Write(t Tuple) bool {
 func (sw *StorageWriter) Close() {
 	err := sw.fp.Close()
 	if err != nil {
-		log.Fatalf("StorageWriter failed to close the file. Error: %e", err)
+		log.Fatalf("StorageWriter failed to close the file. Error: %s", err)
 	}
 }
 
@@ -86,6 +82,6 @@ func (sw *StorageWriter) writeHeader() {
 	binary.BigEndian.PutUint16(b[2:], (*sw.file).Header.DataSize)
 	_, err := sw.fp.WriteAt(b, 0)
 	if err != nil {
-		log.Fatalf("StorageWriter failed to write header. Error: %e", err)
+		log.Fatalf("StorageWriter failed to write header. Error: %s", err)
 	}
 }

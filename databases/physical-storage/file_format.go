@@ -1,5 +1,9 @@
 package storage
 
+const HeaderLen = 4
+const IndexLen = 4
+const FileSize = 256
+
 type File struct {
 	Header PageHeader
 	Index  []IndexEntry
