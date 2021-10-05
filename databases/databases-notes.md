@@ -255,3 +255,53 @@ why does pinning happen? assumption here is that this is going to be related to 
 why not use the OS file system? because we want to control the replacement policy, prefetch, pin pages. 
 
 question: is the DBMS using system calls still to access the disk? it must? -- says done via "lowel-level" OS interfaces to avoid the OS file cache and control when we write. 
+
+pre-class notes
+
+* How Postgres manages disk access and memory buffers
+* heap file format for storing unordered records
+
+Reading the pg docs on the internals https://www.postgresql.org/docs/13/storage-file-layout.html 
+
+PG_DATA dir contains all files and configuration, base subdir contains per database dirs. to locate the db, select * from pg_databases (find the oid). Within a database dir, each table and index is it's own file, which can be located via pg_class.relfilenode 
+
+eg select oid from pg_databases to find the db_dir name and then select relfilenode from pg_class where relname = 'movies' to get the filename of the table movies. xxd on movies file and you can actually see all the data in that table there. free space is tracked in a separate file, in relfilenode_fsm (suffix free space map). Segment size is default 1GB, if file exceeds segment size it's broken up. 
+
+TOAST: the oversized-attribute storage technique
+
+pg page size is commonly 8kb and tuples cannot span multiple pages. 
+
+basically if any columns are TOAST-able (larger than the segment size, varlen) the table has an additional TOAST table. The values are stored in that table in chunks of up to 2k bytes (configurable though). 
+
+crazy/random idea: could you use the idea of tablespaces combined with TOAST to actually use something like S3 to store huge values. Would there ever be any reason to do so? Perhaps depending on workload (eg insert once, read only) this could be useful, but I guess might as well just go directly to S3 and skip reading it in postgres and returning directly if you aren't using pg for anything useful at that point. 
+
+free space maps: separate file tracking available space in the table file – organized into a FSM tree. see https://github.com/postgres/postgres/tree/master/src/backend/storage/freespace
+
+the purpose is to quickly be able to locate a page in the heap file that will fit the tuple to be stored or to determine the page must be extended. One map byte to each page - record free space at a granularity of 1/256th per page. 
+
+Visibility map: keep track of which pages contain only tuples that are visible to active transactions, and which pages contain frozen tuples. 
+
+Actual heap file pages: https://www.postgresql.org/docs/13/storage-page-layout.html
+
+Basically page header data, pointers to items, and data growing backward from the back of the page. 
+
+Not finding much about the actual buffer management in the documentation, but found this resource: https://www.interdb.jp/pg/pgsql08.html
+
+### Buffer Manager
+Job is to manage data transfer between shared memory and disk/persistent storage. Basically this exists to 1) create an abstraction for the rest of the system to not have to think about lower level calls and 2) to make this more performant so we aren't spamming with system calls – reducing the amount of actual physical IO. 
+
+Buffer manager is managing at the level of pages on disk aka frames via a buffer pool and creating abstraction that it's all in RAM (but under the hood it will interact with the disk space manager itself to do physical reading and writing). The buffer pool is just a chunk of ram containing frames which store the pageID, dirty or not, and how many processes have this pinned. 
+
+The backend process (query executor) will call the ReadBufferExtended function to access a desired page. 
+
+1. If page is already in the buffer pool, pin the page and return the buffer pool slot. 
+2. If it's not in the pool, and we have free space, fetch it from disk, load it into an empty slot, and return it to the backend process. 
+3. Otherwise, choose a victim page to evict from the buffer pool using a clock replacement strategy (basically just looking at NextVictim and iterating through the pool until you find one that isn't pinned.)
+
+Dirty pages: buffer manager sets a "dirty bit" on the page, it's informed via the calling process, then it writes it back to the disk manager – by the concurrency control manager and the recovery manager. 
+
+This is pretty clutch https://www.youtube.com/user/CS186Berkeley/playlists 
+
+
+
+
