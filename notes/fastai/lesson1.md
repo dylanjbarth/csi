@@ -1,4 +1,6 @@
 # Lesson 1
+https://github.com/fastai/fastbook/blob/master/01_intro.ipynb
+
 Deep learning has many applications: 
 
 ![dl-applications](./dl-applications.png)
