@@ -305,3 +305,98 @@ This is pretty clutch https://www.youtube.com/user/CS186Berkeley/playlists
 
 
 
+# indexes
+indexes lecture https://www.youtube.com/watch?v=NcuORWy48Qk
+
+indexes in ram: search trees (binary trees, AVL, red black trees) and hash tables 
+indexes on disk: paginated and made up of disk pages themselves. 
+
+index: enables fast lookup and modification of data entries by search keys. 
+
+lookup can support different ops: equality or ranges or 2 dimensional like geospatial data. 
+
+search keys can be any subset of columns in the relation 
+
+Types of indexes: b+-tree, hash, r-tree, GiST (generalized search tree)
+
+Clustered index: (ie a "mostly sorted" index) index data entries are stored in some sorted order. To build a clustered index, sort the heap file and leave space in each block for future inserts. So it's close to but not identical to sort order. this is good for range, and locality, but harder to maintain (due to overflow via inserts)
+
+topics to research: 
+
+- linear hash indexes 
+
+## notes from lecture 
+
+
+
+# joins
+
+Query is parsed and optimized into a logical query plan (directed graph) and this turns into an actual physical query plan, bunch of "iterators" 
+
+operators are streaming (next takes constant time and returns one tuple at a time) or blocking (waits on lots of input from the next call so it can operate on a batch of input instead of one tuple at a time). Sort is an example of a blocking operator, it calls next until it fills up a buffer, then flushes a sorted buffer to disk, then merges the sorted buffers, then returns the min tuple and subsequent tuples. 
+
+**Nested loop join** – join order matters. why? because the algorithm reads in pages at a time. 
+
+because the cost for a nested loop join is basically scan table 1 once and then scan table 2 once per tuple in table 1. So if table 1 is larger than table 2, you want to swap them. 
+
+[R] is number of disk pages to store the relation
+Pr number of records per page
+|R| is cardinality or total number of records in the table. 
+|R| = Pr * [R]
+
+IO Cost for a nested loop join is [number of pages in table 1] + |number of records in table 1| * number of pages in table 2 
+
+so if table 1 has 1000 pages and 100,000 records (100 records per page) and table 2 has 40,000 records, 500 pages, so 80 records per page, our cost will be less if we join table 1 onto table 2 instead of joining table 2 onto table 1. 
+
+**Page Nested Loop Join**: for page in 1, for page in 2, for tuple in p1, for tuple in p2 – page by page. 
+
+**Block/Chunk Nested Loop Join**: same idea as above, but load many pages into memory at once, however much buffer size you have. 
+
+**Index Nested Loop Join**: same as a nested loop join, except you replace the second loop with an index lookup instead, so it should be a scan through one table, 
+
+### sort-merge join 
+
+- only relevant when joining when there is an equality predicate 
+
+2 phases: 
+
+- sort tuples from each relation by key (could already be sorted by something upstream)
+- join pass: scan relations to be merged and yield tuples that match. basically a two pointer loop through both sorted relations.
+
+Cost is the cost of sorting 1 + cost of sorting 2 + number of pages in 1 + number of pages in 2. 
+
+### hash join
+
+also requires a equality predicate, idea here is that you hash everything in table 1 and then iterate through table 2 querying for matches in hash table. 
+
+**Grace hash join**
+
+1. partition tuples from both tables by join key, so all tuples for a given key are in the same partition (divide)
+2. build & probe hash tables (conquer)
+
+## reading https://www.interdb.jp/pg/pgsql03.html#_3.5. re joins 
+
+The main idea
+
+* nested loop join: for each page in table 1, scan each page in table 2 to find tuples matching predicate. table 1 * table 2 cost. supports any type of predicate.
+* merge join: sort & merge. sort each table on the keys used for the join, then join the sorted tables together. only available for equality joins.
+* hash join: build & probe. build hash table using keys of inner table. then probe the hash table with the keys of the outer table. in-memory if one table is small enough, otherwise on disk. 
+
+Variations on nested loop join: 
+
+* materialized nested loop join: read some of one of the tables tuples into memory so you don't constantly trigger an IO when reading them. 
+* indexed nested loop join: planner uses an index if one of the columns on the inner table can be used to satisfy the predicate.
+
+why are joins so sensitive to disk seek latencies? in a join you are merging data that is scattered all over the place, so the less searching you have to do the faster that will be. 
+
+when should the query planner choose a nested loop join? when the result set is small. 
+
+in general when should you use a merge join? when should a hash join be used?
+
+from the pg docs 
+
+* _nested loop join_: The right relation is scanned once for every row found in the left relation. This strategy is easy to implement but can be very time consuming. (However, if the right relation can be scanned with an index scan, this can be a good strategy. It is possible to use values from the current row of the left relation as keys for the index scan of the right.)
+    
+* _merge join_: Each relation is sorted on the join attributes before the join starts. Then the two relations are scanned in parallel, and matching rows are combined to form join rows. This kind of join is more attractive because each relation has to be scanned only once. The required sorting might be achieved either by an explicit sort step, or by scanning the relation in the proper order using an index on the join key.
+    
+* _hash join_: the right relation is first scanned and loaded into a hash table, using its join attributes as hash keys. Next the left relation is scanned and the appropriate values of every row found are used as hash keys to locate the matching rows in the table.
