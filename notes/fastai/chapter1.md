@@ -1,4 +1,4 @@
-# Lesson 1
+# Lesson 1 / Chapter 1
 https://github.com/fastai/fastbook/blob/master/01_intro.ipynb
 
 Deep learning has many applications: 
@@ -72,9 +72,16 @@ Hot tips:
 - can you transform your data into a form that makes it easier for the model to recognize features? eg sounds to spectrograms, time series data to a graph or even better to a colorized chart, mouse speed/clicks from a session into a colorized image on black and white, or even a binary file into a grayscale image. 
     - thus having a good idea of what datasets exist, and what pretrained models exist, is an advantage / good starting point. 
 
+
+To find pretrained models just google or look at modelzoo.co 
+
 Ongoing questions: 
 
 - what the hell is the actual model? how is it possible to strip off a layer from a pre-trained model and then fit that model to my dataset when my data could be anything? is the model just like a matrix of numbers? 
+
+transfer learning: taking a pretrained model and using it for a task different to what it was originally trained for. why is this useful? These big models have a lot of "implicit learning" that you can take advantage of – eg you want to pick out different breeds of dog, which image net doesn't have, but it does know the difference between an airplane and a dog. 
+
+Key paper re: transfer learning "Visualizing and Understanding Convolutional Networks" – they looked at AlexNet, 7 layer network and looked at each layer, visualized it, and you can see that the early layers are simple edge detectors and later layers are very specific patterns. Eg layer 2 finds corners, semi circles and circles, etc. 
 
 ## Retention Questions
 
