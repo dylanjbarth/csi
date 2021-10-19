@@ -77,7 +77,8 @@ How do the steps of the Drivetrain Approach map to a recommendation system?
 
 - objective: drive sales, data: what users have bought in the past, levers: what products we show/highlight to users, model the chances that users buy something based on whether or not you show it to them. 
 
-Create an image recognition model using data you curate, and deploy it on the web.
+TODO Create an image recognition model using data you curate, and deploy it on the web.
+
 What is DataLoaders?
 
 - a class exported by the fastai package that wraps DataLoader classes (compatible with Pytorch dataloader) which gives you all kinds of helpers to load data, turn it into a test, train, validation sets. 
@@ -101,20 +102,57 @@ What letters are often used to signify the independent and dependent variables?
 
 What's the difference between the crop, pad, and squish resize approaches? When might you choose one over the others?
 
-- 
+- crop loses data from the edges, pad adds blank/black space, squish distorts the image.. 
 
 What is data augmentation? Why is it needed?
+
+- taking your initial set of training data and creating slightly distorted/modified copies / random variations of it to increase the size and variety of your training set (without changing the input so much you change the actual meaning of the data). This can help make your model more robust, especially in cases where your training data set is small. 
+
 What is the difference between item_tfms and batch_tfms?
+
+- item_tfms - Item Transforms - is a function to apply to each item in the input training data. 
+- batch_tfms - Batch Transforms - similar idea but applying them in bulk to save time. 
+
 What is a confusion matrix?
+
+- a square chart comparing predictions to actual categories. This helps you identify incorrect classifications. 
+
 What does export save?
+
+- a pickl file which is serialized python objects. 
+
 What is it called when we use a model for getting predictions, instead of training?
+
+- it's called "inference" 
+
 What are IPython widgets?
+
+- mini-apps that can be loaded inside a notebook used for interactivity
+
 When might you want to use CPU for deployment? When might GPU be better?
+
+- you want to use a CPU most of the time because it's more cost effective for the workload, GPUs are only useful when you need to do many similar calculations in parallel. 
+
 What are the downsides of deploying your app to a server, instead of to a client (or edge) device such as a phone or PC?
+
+- the roundtrip time to make the prediction, storage and server costs. 
+
 What are three examples of problems that could occur when rolling out a bear warning system in practice?
+
+- basically everything comes back to the training data not matching the real data - medium differences (photos vs videos), lighting differences, in situ differences like bears hiding behind trees, etc. 
+
 What is "out-of-domain data"?
+
+- data that is used as input but not actually relevant to the problem that you are solving for. 
+
 What is "domain shift"?
+
+- the type of data the model sees changes over time so the original training is no longer relevant. 
+
 What are the three steps in the deployment process?
+
+- ship it with humans in the loop first, then roll out to a small group, then larger roll out. 
+
 Further Research
 Consider how the Drivetrain Approach maps to a project or problem you're interested in.
 When might it be best to avoid certain types of data augmentation?
