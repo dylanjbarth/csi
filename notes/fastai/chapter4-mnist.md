@@ -36,3 +36,17 @@ The basic algorithm is:
 
 Picking your learning rate correctly is important to ensure that you are able to solve the problem in a reasonable amount of time. 
 
+Important jargon: 
+
+tensor: n-dimensional array
+rank: the number of axes or dimensions in a tensor, eg a 3d tensor is a rank-3 tensor
+shape: is the size of each axis of a tensor. eg 6000 images, each 28x28 pixels
+
+Important libraries to get comfortable with: 
+
+- numpy
+- pandas
+- pytorch (understand the FFI to C and how some of these operations are implemented. Could be a great series of blog posts.)
+- fastai
+
+CUDA: the equivalent of C on a GPU
