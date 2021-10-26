@@ -17,18 +17,16 @@ type CommandGroup struct {
 	Args []string
 }
 
-type Parser struct {
-	input string
+type Parser struct{}
+
+func NewParser() *Parser {
+	return &Parser{}
 }
 
-func NewParser(input string) *Parser {
-	return &Parser{input}
-}
-
-func (p *Parser) Parse() (CommandGroup, error) {
-	sp := strings.Fields(p.input)
+func (p *Parser) Parse(input string) (CommandGroup, error) {
+	sp := strings.Fields(input)
 	if len(sp) != 2 {
-		return CommandGroup{}, fmt.Errorf("unable to parse input %s", p.input)
+		return CommandGroup{}, fmt.Errorf("unable to parse input %s", input)
 	}
 	cmd := strings.ToLower(sp[0])
 	switch cmd {
@@ -37,9 +35,9 @@ func (p *Parser) Parse() (CommandGroup, error) {
 	case "set":
 		args := strings.Split(sp[1], "=")
 		if len(args) != 2 {
-			return CommandGroup{}, fmt.Errorf("unable to parse input %s", p.input)
+			return CommandGroup{}, fmt.Errorf("unable to parse input %s", input)
 		}
 		return CommandGroup{CMD_SET, args}, nil
 	}
-	return CommandGroup{}, fmt.Errorf("unable to parse input %s", p.input)
+	return CommandGroup{}, fmt.Errorf("unable to parse input %s", input)
 }

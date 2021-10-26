@@ -3,8 +3,8 @@ package kv
 import "testing"
 
 func TestParser(t *testing.T) {
-	p := NewParser("get foo")
-	out, err := p.Parse()
+	p := NewParser()
+	out, err := p.Parse("get foo")
 	if err != nil {
 		t.Errorf("Expected parse to not fail but got %s", err)
 	}
@@ -18,8 +18,7 @@ func TestParser(t *testing.T) {
 		t.Errorf("Expected parsed command to be foo but got %s", out.Args[0])
 	}
 
-	p = NewParser("set foo=bar")
-	out, err = p.Parse()
+	out, err = p.Parse("set foo=bar")
 	if err != nil {
 		t.Errorf("Expected parse to not fail but got %s", err)
 	}
@@ -36,8 +35,7 @@ func TestParser(t *testing.T) {
 		t.Errorf("Expected parsed arg to be bar but got %s", out.Args[1])
 	}
 
-	p = NewParser("foo")
-	out, err = p.Parse()
+	out, err = p.Parse("foo")
 	if err == nil {
 		t.Errorf("Expected parse to fail but got %s", out)
 	}
