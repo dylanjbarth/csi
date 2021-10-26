@@ -1,10 +1,12 @@
 package main
 
-import "kv"
+import (
+	"kvstore/kv"
+)
 
 const PROMPT = "kv> "
 
 func main() {
-	c = kv.NewClient(PROMPT)
+	c := kv.NewClient(PROMPT)
 	c.DoRepl()
 }
