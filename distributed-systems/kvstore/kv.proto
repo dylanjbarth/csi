@@ -1,0 +1,13 @@
+syntax = "proto3";
+package kvstore;
+
+option go_package = "kvstore/kv";
+
+message Item {
+    string key = 1;
+    string value = 2;
+}
+
+message ItemCollection {
+    repeated Item items = 1;
+}
