@@ -23,10 +23,6 @@ func (s *Storage) initStorage(clean bool) error {
 	_, err := os.Stat(s.path)
 	if os.IsNotExist(err) || clean {
 		_, err = os.Create(s.path)
-		if err != nil {
-			return err
-		}
-		return ioutil.WriteFile(s.path, []byte("{}"), fs.FileMode(uint32(0600)))
 	}
 	return err
 }
