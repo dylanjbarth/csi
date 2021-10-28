@@ -64,3 +64,8 @@ be eternally pessimistic about your ability to write bug-free software, no amoun
 is automatic failover a good thing? depends on the context. Most of the time, probably good, but if the system makes a mistake and thinks you are down but you aren't, what's the cost of switching to the replica? 
 
 TODO: read the recent FB postmortem, read the Github 2012 post-mortem, read the complex systems memo, also watch this Bryan Cantrill talk https://www.youtube.com/watch?v=30jNsCVLpAE
+
+### Rich Hickey Keynote on systems 
+
+https://www.youtube.com/watch?v=ROor6_NGIWU
+
