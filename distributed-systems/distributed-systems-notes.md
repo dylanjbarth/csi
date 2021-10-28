@@ -1,5 +1,4 @@
-# chapter 1 
-
+# chapter 1
 data-intensive vs computer-intensive -- CPU power isn't the limiting factor, instead it's the amount, complexity, and rate of change of the underlying data. 
 
 goal is to achieve a system that is reliable, scalable, and maintainable. 
@@ -45,3 +44,23 @@ performance - latency vs response time. Response time is from the client perspec
 create good abstractions to pay down accidental complexity. 
 
 apply Agile and TDD and refactoring to make systems easy to change in future. 
+
+# Intro Lecture Notes 
+
+distributed systems is basically "what happens when you need to scale beyond a single node" -- examining the tradeoffs, eg buy throughput but pay in consistency 
+
+Amazon led the charge into microservices -- Meera: Looks like this is the Werner Vogels talk that Oz mentioned https://queue.acm.org/detail.cfm?id=1142065 
+
+Fundamental distributed systems tradeoff: Replication and partioning in exchange for consistency. 
+
+https://danluu.com/postmortem-lessons/
+
+We don't have good systems for testing configuration changes, and thus a lot of outages are caused by configuration changes breaking something in an unexpected way. 
+
+NTP is a hack, it takes time to communicate the time. 
+
+be eternally pessimistic about your ability to write bug-free software, no amount of testing is never enough. 
+
+is automatic failover a good thing? depends on the context. Most of the time, probably good, but if the system makes a mistake and thinks you are down but you aren't, what's the cost of switching to the replica? 
+
+TODO: read the recent FB postmortem, read the Github 2012 post-mortem, read the complex systems memo, also watch this Bryan Cantrill talk https://www.youtube.com/watch?v=30jNsCVLpAE
