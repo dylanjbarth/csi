@@ -1,14 +1,13 @@
 package kv
 
 import (
-	"encoding/json"
 	"fmt"
 	"io/fs"
 	"io/ioutil"
 	"os"
-)
 
-type DataContainer map[string]string
+	"google.golang.org/protobuf/proto"
+)
 
 type Storage struct {
 	path string
@@ -24,33 +23,35 @@ func (s *Storage) initStorage(clean bool) error {
 	_, err := os.Stat(s.path)
 	if os.IsNotExist(err) || clean {
 		_, err = os.Create(s.path)
-		if err != nil {
-			return err
-		}
-		return ioutil.WriteFile(s.path, []byte("{}"), fs.FileMode(uint32(0600)))
 	}
 	return err
 }
 
 func (s *Storage) Get(key string) (string, error) {
-	var container DataContainer
-	err := s.read(&container)
+	var ic ItemCollection
+	err := s.read(&ic)
 	if err != nil {
 		return "", err
 	}
-	return container[key], nil
+	for _, i := range ic.Items {
+		if i.Key == key {
+			return i.Value, nil
+		}
+	}
+	return "", fmt.Errorf("no entry for %s found", key)
 }
 
 func (s *Storage) Set(key, value string) error {
-	var container DataContainer
-	err := s.read(&container)
+	var ic ItemCollection
+	err := s.read(&ic)
 	if err != nil {
 		return err
 	}
-	container[key] = value
-	out, err := json.Marshal(container)
+	item := Item{Key: key, Value: value}
+	ic.Items = append(ic.Items, &item)
+	out, err := proto.Marshal(&ic)
 	if err != nil {
-		return fmt.Errorf("failed to serialize data %s: %s", container, err)
+		return fmt.Errorf("failed to serialize data %s: %s", &ic, err)
 	}
 	err = ioutil.WriteFile(s.path, out, fs.FileMode(uint32(0600)))
 	if err != nil {
@@ -59,10 +60,10 @@ func (s *Storage) Set(key, value string) error {
 	return nil
 }
 
-func (s *Storage) read(container *DataContainer) error {
+func (s *Storage) read(ic *ItemCollection) error {
 	data, err := ioutil.ReadFile(s.path)
 	if err != nil {
 		return fmt.Errorf("failed to read file %s: %s", s.path, err)
 	}
-	return json.Unmarshal(data, &container)
+	return proto.Unmarshal(data, ic)
 }

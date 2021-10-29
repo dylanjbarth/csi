@@ -3,10 +3,10 @@ package kv
 import "testing"
 
 func TestStorage(t *testing.T) {
-	s := NewStorage("./test_db.json", true)
+	s := NewStorage("./test_db", true)
 	res, err := s.Get("foo")
-	if err != nil {
-		t.Errorf("Expected get to not fail but got %s", err)
+	if err == nil {
+		t.Errorf("Expected get to fail on empty DB but got %s", res)
 	}
 	if res != "" {
 		t.Errorf("Expected test db to be empty but got %s", res)
