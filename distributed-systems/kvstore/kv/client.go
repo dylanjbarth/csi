@@ -2,10 +2,13 @@ package kv
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 	"log"
 	"net"
 	"os"
+
+	"google.golang.org/protobuf/proto"
 )
 
 type Client struct {
@@ -13,11 +16,12 @@ type Client struct {
 	conn   net.Conn
 	reader *bufio.Reader
 	writer io.Writer
+	p      *Parser
 }
 
 func NewClient(prompt string) *Client {
 	conn := initConnection()
-	return &Client{prompt, conn, bufio.NewReader(os.Stdin), os.Stdout}
+	return &Client{prompt, conn, bufio.NewReader(os.Stdin), os.Stdout, NewParser()}
 }
 
 func initConnection() net.Conn {
@@ -38,19 +42,42 @@ func (c *Client) Shell() {
 		if err != nil {
 			log.Fatalf("Unable to read from stdin. %s", err)
 		}
-		resp := c.SendToServer(line)
-		c.writer.Write([]byte(resp))
+		req, err := c.p.Parse(line)
+		if err != nil {
+			c.RespondToUser(&Response{Code: Response_FAILURE, Message: fmt.Sprintf("failed to parse input %s", err)})
+		} else {
+			resp := c.SendToServer(&req)
+			c.RespondToUser(resp)
+		}
 	}
 }
 
-func (c *Client) SendToServer(line string) string {
-	_, err := c.conn.Write([]byte(line))
+func (c *Client) SendToServer(req *Request) *Response {
+	reqbytes, err := proto.Marshal(req)
+	if err != nil {
+		log.Fatalf("failed to serialize request: %s", err)
+	}
+	_, err = c.conn.Write(reqbytes)
 	if err != nil {
 		log.Fatalf("failed to send input to server: %s", err)
 	}
-	resp, err := bufio.NewReader(c.conn).ReadString('\n')
+	data, err := bufio.NewReader(c.conn).ReadBytes('\n')
 	if err != nil {
 		log.Fatalf("failed to read response from server: %s", err)
 	}
-	return resp
+	var resp Response
+	err = proto.Unmarshal(data, &resp)
+	if err != nil {
+		log.Fatalf("failed to deserialize response from server: %s", err)
+	}
+	return &resp
+}
+
+func (c *Client) RespondToUser(res *Response) {
+	// TODO fun to colorize based on success or failure codes
+	out, err := proto.Marshal(res)
+	if err != nil {
+		log.Fatalf("failed to serialize response: %s", err)
+	}
+	c.writer.Write(out)
 }

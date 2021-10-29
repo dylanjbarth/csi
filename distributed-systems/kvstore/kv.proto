@@ -11,3 +11,21 @@ message Item {
 message ItemCollection {
     repeated Item items = 1;
 }
+
+message Request {
+    enum Command {
+        GET = 0;
+        SET = 1;
+    }
+    Command command = 1;
+    Item item = 2;
+}
+
+message Response {
+    enum Code {
+        SUCCESS = 0;
+        FAILURE = 1;
+    }
+    Code code = 1;
+    string message = 2;
+}
