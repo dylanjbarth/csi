@@ -69,3 +69,52 @@ TODO: read the recent FB postmortem, read the Github 2012 post-mortem, read the 
 
 https://www.youtube.com/watch?v=ROor6_NGIWU
 
+
+# Distributed Data
+
+scaling out can be useful for: scalability, fault tolerance/high availability, and latency reduction. 
+
+scaling up == shared-memory architecture. Also a shared-disk architecture (but you run into contention and locking limit)
+
+shared-nothing architecture aka horizontal scaling or scaling out. 
+
+replication: copying data across nodes to provide redundancy in case of failure and improve performance 
+partitioning: splitting dataset into subsets across nodes. 
+
+## Replication 
+
+why replicate data? 
+- to keep data close to users geographically and reduce latency 
+- increase availability in case of failures 
+- scale out to increase performance 
+
+You can replicate using different strategies: **single-leader, multi-leader, or leaderless** -- and **synchronous or asyncronous**. 
+
+**leader based replication**: you have a single node that is the leader and all writes must go through the leader. other nodes are followers or read replicas - leader sends writes to the followers. This is built into postgres. 
+**Sync vs async replication** downsides to both -- synchronous is nice because it increases durability of write but could slow down performance (if follower is unavailable). async is nice because increases availability but decreases durability of writes / could lead to losing data. 
+
+Adding followers happens basically by copying a snapshot of the leader and then the follower requesting all data starting from where the snapshot ends. 
+
+Leader failover (when leader is unavailable and a new leader is chose) can be tricky: hard to determine for sure if leader has failed, also have to get cluster to agree on new leader. 
+
+Replication log strategies: WAL is good because it's the data being written but it's storage implementation specific. Logical log similar idea but less coupled to storage allowing for backward compatibility (eg leader and follower could run different versions of software)
+
+**eventual consistency** an effect where data read from a follower may be outdated because of the replication lag between it and the leader. 
+
+**read after write consistency** guarantee that if user reloads page, they will see the updates they have submitted even in an eventually consistent system. 
+
+**monotonic reads** guarantee that reads won't go backward in time (eg if you read something that happens, you will not read from a follower that has an older copy of the DB that what you've already read)
+
+**consistent prefix reads**: guarantee that if sequence of writes happens in a certain order then a reader will see them appear in the same order. 
+
+Why would you want a multi-leader setup? 
+
+- could help if you have multiple data centers, you could have clusters that have single leader, and across the datacenters have a multi leader setup. 
+
+If you have more than one leader, this can lead to conflicts: 
+
+- best way to resolve a conflict is to avoid it in the first place (by having a single leader, or routing requests from a single user through the same leader)
+- make unit of change really small to reduce likelihood of conflicts. 
+- last write wins or oldest replica wins -- both are unambiguous but will lead to data loss
+- could record the conflict and then ask the user to resolve it. 
+
