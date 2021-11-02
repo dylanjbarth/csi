@@ -34,3 +34,11 @@ func getNextMessage(c *net.Conn) (*[]byte, error) {
 	out = out[LENGTH_PREFIX_BYTES:]
 	return &out, nil
 }
+
+func (r *Request) PrettyPrint() string {
+	return fmt.Sprintf("Command: %s; Key: %s; Value: %s", r.Command, r.Item.Key, r.Item.Value)
+}
+
+func (r *Response) PrettyPrint() string {
+	return fmt.Sprintf("Code: %s; Message: %s", r.Code, r.Message)
+}

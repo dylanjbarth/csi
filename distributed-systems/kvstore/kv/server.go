@@ -58,16 +58,16 @@ func (s *Server) HandleConnection(conn *net.Conn) {
 		case Request_GET:
 			res, err := s.s.Get(req.Item.Key)
 			if err != nil {
-				s.Respond(conn, &Response{Code: Response_FAILURE, Message: fmt.Sprintf("get failed: %s", err)})
+				s.Respond(conn, &Response{Code: Response_FAILURE, Message: fmt.Sprintf("get failed: %s\n", err)})
 			} else {
 				s.Respond(conn, &Response{Code: Response_SUCCESS, Message: fmt.Sprintf("%s\n", res)})
 			}
 		case Request_SET:
 			err = s.s.Set(req.Item.Key, req.Item.Value)
 			if err != nil {
-				s.Respond(conn, &Response{Code: Response_FAILURE, Message: fmt.Sprintf("set failed: %s", err)})
+				s.Respond(conn, &Response{Code: Response_FAILURE, Message: fmt.Sprintf("set failed: %s\n", err)})
 			} else {
-				s.Respond(conn, &Response{Code: Response_SUCCESS, Message: "Success\n"})
+				s.Respond(conn, &Response{Code: Response_SUCCESS, Message: fmt.Sprintf("Success: %s=%s\n", req.Item.Key, req.Item.Value)})
 			}
 		}
 	}

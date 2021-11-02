@@ -74,10 +74,5 @@ func (c *Client) SendToServer(req *Request) *Response {
 }
 
 func (c *Client) RespondToUser(res *Response) {
-	// TODO fun to colorize based on success or failure codes
-	out, err := proto.Marshal(res)
-	if err != nil {
-		log.Fatalf("failed to serialize response: %s", err)
-	}
-	c.writer.Write(out)
+	c.writer.Write([]byte(res.PrettyPrint()))
 }
