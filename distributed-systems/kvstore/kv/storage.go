@@ -53,8 +53,19 @@ func (s *Storage) Set(key, value string) error {
 	if err != nil {
 		return err
 	}
-	item := Item{Key: key, Value: value}
-	ic.Items = append(ic.Items, &item)
+	match := -1
+	for idx, i := range ic.Items {
+		if i.Key == key {
+			match = idx
+			break
+		}
+	}
+	if match >= 0 {
+		ic.Items[match].Value = value
+	} else {
+		item := Item{Key: key, Value: value}
+		ic.Items = append(ic.Items, &item)
+	}
 	out, err := proto.Marshal(&ic)
 	if err != nil {
 		return fmt.Errorf("failed to serialize data %s: %s", &ic, err)
