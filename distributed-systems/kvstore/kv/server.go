@@ -95,6 +95,8 @@ func (s *Leader) HandleConnection(conn *net.Conn) {
 			} else {
 				s.Respond(conn, &Response{Code: Response_SUCCESS, Message: fmt.Sprintf("Success: %s=%s\n", req.Item.Key, req.Item.Value)})
 			}
+			// async replicate to followers (ignoring retries for now!)
+
 		}
 	}
 }

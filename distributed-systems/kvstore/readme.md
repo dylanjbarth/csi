@@ -12,3 +12,8 @@
 - figure out a use case.
 - improve shell UX (arrow keys, meta chars)
 - improve parsing, can't set multi word values for example. eg `set foo=bar baz` fails
+
+## Replication design idea: 
+- introduce a comms manager (load balancer) which is a thin layer that routes to leader or follower pool based on write/read. This way client only has one address for server and number of followers can scale up or down (just need to register with comms manager and leader)
+- after write, leader broadcasts write to all followers. 
+observation: complexity really immediately increases as soon as you try and add more than 1 server - introducing a load balancer, figuring out the communication scheme, thinking about how the storage format will scale up or down. 
