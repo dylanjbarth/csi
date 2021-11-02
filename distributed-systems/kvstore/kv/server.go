@@ -1,22 +1,22 @@
 package kv
 
 import (
-	"bufio"
 	"fmt"
 	"log"
 	"net"
 	"os"
+
+	"google.golang.org/protobuf/proto"
 )
 
 type Server struct {
 	l net.Listener
-	p *Parser
 	s *Storage
 }
 
 func NewServer(path string) *Server {
 	l := initListener()
-	return &Server{l, NewParser(), NewStorage(path, false)}
+	return &Server{l, NewStorage(path, false)}
 }
 
 func initListener() net.Listener {
@@ -36,43 +36,49 @@ func (s *Server) AcceptConnections() {
 		if err != nil {
 			log.Fatalf("failed to read from client: %s", err)
 		}
-		go s.HandleConnection(conn)
+		go s.HandleConnection(&conn)
 	}
 }
 
-func (s *Server) HandleConnection(conn net.Conn) {
+func (s *Server) HandleConnection(conn *net.Conn) {
 	for {
-		data, err := bufio.NewReader(conn).ReadString('\n')
+		data, err := getNextMessage(conn)
 		if err != nil {
 			log.Fatalf("failed to read from client: %s", err)
 		}
 		log.Printf("Got %s", data)
-		cmdgrp, err := s.p.Parse(data)
+		var req Request
+		err = proto.Unmarshal(*data, &req)
 		if err != nil {
-			s.Respond(conn, fmt.Sprintf("parsing failed: %s", err))
+			s.Respond(conn, &Response{Code: Response_FAILURE, Message: "unable to deserialize request"})
+			continue
 		}
-		log.Printf("Parsed %s", cmdgrp)
-		switch cmdgrp.Cmd {
-		case CMD_GET:
-			res, err := s.s.Get(cmdgrp.Args[0])
+
+		switch req.Command {
+		case Request_GET:
+			res, err := s.s.Get(req.Item.Key)
 			if err != nil {
-				s.Respond(conn, fmt.Sprintf("get failed: %s", err))
+				s.Respond(conn, &Response{Code: Response_FAILURE, Message: fmt.Sprintf("get failed: %s\n", err)})
 			} else {
-				s.Respond(conn, fmt.Sprintf("%s\n", res))
+				s.Respond(conn, &Response{Code: Response_SUCCESS, Message: fmt.Sprintf("%s\n", res)})
 			}
-		case CMD_SET:
-			err = s.s.Set(cmdgrp.Args[0], cmdgrp.Args[1])
+		case Request_SET:
+			err = s.s.Set(req.Item.Key, req.Item.Value)
 			if err != nil {
-				s.Respond(conn, fmt.Sprintf("set failed: %s", err))
+				s.Respond(conn, &Response{Code: Response_FAILURE, Message: fmt.Sprintf("set failed: %s\n", err)})
 			} else {
-				s.Respond(conn, "\n")
+				s.Respond(conn, &Response{Code: Response_SUCCESS, Message: fmt.Sprintf("Success: %s=%s\n", req.Item.Key, req.Item.Value)})
 			}
 		}
 	}
 }
 
-func (s *Server) Respond(conn net.Conn, resp string) {
-	_, err := conn.Write([]byte(resp))
+func (s *Server) Respond(conn *net.Conn, resp *Response) {
+	out, err := proto.Marshal(resp)
+	if err != nil {
+		log.Fatalf("failed to serialize response: %s", err)
+	}
+	_, err = (*conn).Write(*toWireFormat(&out))
 	if err != nil {
 		log.Fatalf("failed to respond to client: %s", err)
 	}
