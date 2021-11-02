@@ -1,3 +1,4 @@
 db.json
 kv/test_db
+data/*.kv
 *.sock

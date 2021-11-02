@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/fs"
 	"io/ioutil"
+	"log"
 	"os"
 
 	"google.golang.org/protobuf/proto"
@@ -15,13 +16,18 @@ type Storage struct {
 
 func NewStorage(path string, clean bool) *Storage {
 	s := Storage{path}
-	s.initStorage(clean)
+	err := s.initStorage(clean)
+	if err != nil {
+		log.Fatalf("failed to init storage; %s", err)
+	}
 	return &s
 }
 
 func (s *Storage) initStorage(clean bool) error {
+	log.Printf("attempting to init storage file %s", s.path)
 	_, err := os.Stat(s.path)
 	if os.IsNotExist(err) || clean {
+		log.Printf("path doesn't exist. attempting to create it")
 		_, err = os.Create(s.path)
 	}
 	return err
