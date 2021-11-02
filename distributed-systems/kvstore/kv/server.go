@@ -79,7 +79,7 @@ func (s *Server) Respond(conn *net.Conn, resp *Response) {
 	if err != nil {
 		log.Fatalf("failed to serialize response: %s", err)
 	}
-	_, err = (*conn).Write(out)
+	_, err = (*conn).Write(*toWireFormat(&out))
 	if err != nil {
 		log.Fatalf("failed to respond to client: %s", err)
 	}

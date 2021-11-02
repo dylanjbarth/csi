@@ -57,7 +57,7 @@ func (c *Client) SendToServer(req *Request) *Response {
 	if err != nil {
 		log.Fatalf("failed to serialize request: %s", err)
 	}
-	_, err = c.conn.Write(reqbytes)
+	_, err = c.conn.Write(*toWireFormat(&reqbytes))
 	if err != nil {
 		log.Fatalf("failed to send input to server: %s", err)
 	}
