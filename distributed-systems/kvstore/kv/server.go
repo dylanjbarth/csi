@@ -46,14 +46,14 @@ func (s *Server) HandleConnection(conn *net.Conn) {
 		if err != nil {
 			log.Fatalf("failed to read from client: %s", err)
 		}
-		log.Printf("Got %s", data)
 		var req Request
 		err = proto.Unmarshal(*data, &req)
 		if err != nil {
+			log.Printf("unable to interpret request %s", data)
 			s.Respond(conn, &Response{Code: Response_FAILURE, Message: "unable to deserialize request"})
 			continue
 		}
-
+		log.Printf("request: %s", req.PrettyPrint())
 		switch req.Command {
 		case Request_GET:
 			res, err := s.s.Get(req.Item.Key)
@@ -74,6 +74,7 @@ func (s *Server) HandleConnection(conn *net.Conn) {
 }
 
 func (s *Server) Respond(conn *net.Conn, resp *Response) {
+	log.Printf("response: %s", resp.PrettyPrint())
 	out, err := proto.Marshal(resp)
 	if err != nil {
 		log.Fatalf("failed to serialize response: %s", err)
