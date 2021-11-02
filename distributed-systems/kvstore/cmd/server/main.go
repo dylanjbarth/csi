@@ -5,6 +5,7 @@ import (
 )
 
 func main() {
+	// TODO add cli options to determine number of followers.
 	leader := kv.NewLeader(kv.DATA_PATH)
-	kv.AcceptConnections(leader)
+	kv.AcceptClientConnections(leader)
 }

@@ -25,7 +25,7 @@ func NewClient(prompt string) *Client {
 }
 
 func initConnection() net.Conn {
-	conn, err := net.Dial("unix", SOCKET_FILE)
+	conn, err := net.Dial("unix", CLIENT_SERVER_SOCKET_FILE)
 	if err != nil {
 		log.Fatalf("Unable to connect to server. Is it running? %s", err)
 	}

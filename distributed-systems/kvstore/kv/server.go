@@ -10,13 +10,14 @@ import (
 )
 
 type ConnHandler interface {
-	GetListener() net.Listener
+	GetClientListener() net.Listener
 	HandleConnection(*net.Conn)
 }
 
 type Server struct {
-	l net.Listener
-	s *Storage
+	client_listener net.Listener
+	server_listener net.Listener
+	s               *Storage
 }
 
 type Leader struct {
@@ -28,37 +29,35 @@ type Follower struct {
 }
 
 func NewLeader(path string) *Leader {
-	l := initListener()
-	return &Leader{Server{l, NewStorage(path, false)}}
+	return &Leader{Server{initListener(CLIENT_SERVER_SOCKET_FILE), initListener(SERVER_SERVER_SOCKET_FILE), NewStorage(path, false)}}
 }
 
 func NewFollower(path string) *Follower {
-	l := initListener()
-	return &Follower{Server{l, NewStorage(path, false)}}
+	return &Follower{Server{initListener(CLIENT_SERVER_SOCKET_FILE), initListener(SERVER_SERVER_SOCKET_FILE), NewStorage(path, false)}}
 }
 
-func initListener() net.Listener {
+func initListener(fp string) net.Listener {
 	// Unlink socket to listen (ignoring errors)
-	os.Remove(SOCKET_FILE)
-	l, err := net.Listen("unix", SOCKET_FILE)
+	os.Remove(fp)
+	l, err := net.Listen("unix", fp)
 	if err != nil {
-		log.Fatalf("failed to listen on socket %s %s", SOCKET_FILE, err)
+		log.Fatalf("failed to listen on socket %s %s", fp, err)
 	}
 	return l
 }
 
-func (l *Leader) GetListener() net.Listener {
-	return l.l
+func (l *Leader) GetClientListener() net.Listener {
+	return l.client_listener
 }
 
-func (f *Follower) GetListener() net.Listener {
-	return f.l
+func (f *Follower) GetClientListener() net.Listener {
+	return f.client_listener
 }
 
-func AcceptConnections(n ConnHandler) {
+func AcceptClientConnections(n ConnHandler) {
 	for {
 		log.Printf("Starting to accept connections ")
-		conn, err := n.GetListener().Accept()
+		conn, err := n.GetClientListener().Accept()
 		if err != nil {
 			log.Fatalf("failed to read from client: %s", err)
 		}
