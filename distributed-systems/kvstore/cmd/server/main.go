@@ -5,6 +5,6 @@ import (
 )
 
 func main() {
-	c := kv.NewServer(kv.DATA_PATH)
-	c.AcceptConnections()
+	leader := kv.NewLeader(kv.DATA_PATH)
+	kv.AcceptConnections(leader)
 }
