@@ -61,12 +61,12 @@ func (c *Client) SendToServer(req *Request) *Response {
 	if err != nil {
 		log.Fatalf("failed to send input to server: %s", err)
 	}
-	data, err := bufio.NewReader(c.conn).ReadBytes('\n')
+	data, err := getNextMessage(&c.conn)
 	if err != nil {
 		log.Fatalf("failed to read response from server: %s", err)
 	}
 	var resp Response
-	err = proto.Unmarshal(data, &resp)
+	err = proto.Unmarshal(*data, &resp)
 	if err != nil {
 		log.Fatalf("failed to deserialize response from server: %s", err)
 	}

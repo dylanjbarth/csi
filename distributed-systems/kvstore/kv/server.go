@@ -1,7 +1,6 @@
 package kv
 
 import (
-	"bufio"
 	"fmt"
 	"log"
 	"net"
@@ -43,13 +42,13 @@ func (s *Server) AcceptConnections() {
 
 func (s *Server) HandleConnection(conn *net.Conn) {
 	for {
-		data, err := bufio.NewReader(*conn).ReadBytes('\n')
+		data, err := getNextMessage(conn)
 		if err != nil {
 			log.Fatalf("failed to read from client: %s", err)
 		}
 		log.Printf("Got %s", data)
 		var req Request
-		err = proto.Unmarshal(data, &req)
+		err = proto.Unmarshal(*data, &req)
 		if err != nil {
 			s.Respond(conn, &Response{Code: Response_FAILURE, Message: "unable to deserialize request"})
 			continue
