@@ -37,13 +37,13 @@ func (s *Server) AcceptConnections() {
 		if err != nil {
 			log.Fatalf("failed to read from client: %s", err)
 		}
-		go s.HandleConnection(conn)
+		go s.HandleConnection(&conn)
 	}
 }
 
-func (s *Server) HandleConnection(conn net.Conn) {
+func (s *Server) HandleConnection(conn *net.Conn) {
 	for {
-		data, err := bufio.NewReader(conn).ReadBytes('\n')
+		data, err := bufio.NewReader(*conn).ReadBytes('\n')
 		if err != nil {
 			log.Fatalf("failed to read from client: %s", err)
 		}
