@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"os"
 
 	"google.golang.org/protobuf/proto"
 )
 
 type ConnHandler interface {
+	Log(msg string)
 	GetListener() net.Listener
 	HandleConnection(*net.Conn)
 }
@@ -16,6 +18,7 @@ type ConnHandler interface {
 type Server struct {
 	request_listener net.Listener
 	s                *Storage
+	logger           *log.Logger
 }
 
 type Leader struct {
@@ -28,12 +31,12 @@ type Follower struct {
 
 func NewLeader(path string) *Leader {
 	log.Printf("Creating new leader listening on port %s and storing data %s", LEADER_PORT, path)
-	return &Leader{Server{initListener(LEADER_PORT), NewStorage(path, false)}}
+	return &Leader{Server{initListener(LEADER_PORT), NewStorage(path, false), log.New(os.Stdout, "leader: ", log.LstdFlags)}}
 }
 
 func NewFollower(path string) *Follower {
 	log.Printf("Creating new follower listening on port %s", FOLLOWER_PORT)
-	return &Follower{Server{initListener(FOLLOWER_PORT), NewStorage(path, false)}}
+	return &Follower{Server{initListener(FOLLOWER_PORT), NewStorage(path, false), log.New(os.Stdout, "follower: ", log.LstdFlags)}}
 }
 
 func initListener(port string) net.Listener {
@@ -52,48 +55,56 @@ func (f *Follower) GetListener() net.Listener {
 	return f.request_listener
 }
 
+func (l *Leader) Log(msg string) {
+	l.logger.Print(msg)
+}
+
+func (f *Follower) Log(msg string) {
+	f.logger.Print(msg)
+}
+
 func AcceptRouterConnections(n ConnHandler) {
 	for {
-		log.Printf("Starting to accept connections ")
+		n.Log("Starting to accept connections ")
 		conn, err := n.GetListener().Accept()
 		if err != nil {
-			log.Fatalf("failed to connect: %s", err)
+			n.Log(fmt.Sprintf("failed to connect: %s", err))
 		}
 		go n.HandleConnection(&conn)
 	}
 }
 
 // Leader can handle writes and reads, also responsible for replicating to all followers.
-func (s *Leader) HandleConnection(conn *net.Conn) {
+func (l *Leader) HandleConnection(conn *net.Conn) {
 	for {
 		data, err := getNextMessage(conn)
 		if err != nil {
-			log.Fatalf("failed to read from connection: %s", err)
+			log.Fatalf("leader failed to read from connection: %s", err)
 		}
 		var req Request
 		err = proto.Unmarshal(*data, &req)
 		if err != nil {
-			log.Printf("unable to interpret request %s", data)
-			s.Respond(conn, &Response{Code: Response_FAILURE, Message: "unable to deserialize request"})
+			l.Log(fmt.Sprintf("unable to interpret request %s", data))
+			l.Respond(conn, &Response{Code: Response_FAILURE, Message: "unable to deserialize request"})
 			continue
 		}
-		log.Printf("request: %s", req.PrettyPrint())
+		l.Log(fmt.Sprintf("request: %s", req.PrettyPrint()))
 		switch req.Command {
 		case Request_GET:
 			// TODO leader can obviously handle get requests too, but enforcing this for now.
-			s.Respond(conn, &Response{Code: Response_FAILURE, Message: "leader only handles writes\n"})
+			l.Respond(conn, &Response{Code: Response_FAILURE, Message: "leader only handles writes\n"})
 			// res, err := s.s.Get(req.Item.Key)
 			// if err != nil {
-			// 	s.Respond(conn, &Response{Code: Response_FAILURE, Message: fmt.Sprintf("get failed: %s\n", err)})
+			// 	l.Respond(conn, &Response{Code: Response_FAILURE, Message: fmt.Sprintf("get failed: %s\n", err)})
 			// } else {
-			// 	s.Respond(conn, &Response{Code: Response_SUCCESS, Message: fmt.Sprintf("%s\n", res)})
+			// 	l.Respond(conn, &Response{Code: Response_SUCCESS, Message: fmt.Sprintf("%s\n", res)})
 			// }
 		case Request_SET:
-			err = s.s.Set(req.Item.Key, req.Item.Value)
+			err = l.s.Set(req.Item.Key, req.Item.Value)
 			if err != nil {
-				s.Respond(conn, &Response{Code: Response_FAILURE, Message: fmt.Sprintf("set failed: %s\n", err)})
+				l.Respond(conn, &Response{Code: Response_FAILURE, Message: fmt.Sprintf("set failed: %s\n", err)})
 			} else {
-				s.Respond(conn, &Response{Code: Response_SUCCESS, Message: fmt.Sprintf("Success: %s=%s\n", req.Item.Key, req.Item.Value)})
+				l.Respond(conn, &Response{Code: Response_SUCCESS, Message: fmt.Sprintf("Success: %s=%s\n", req.Item.Key, req.Item.Value)})
 			}
 			// async replicate to followers (ignoring retries for now!)
 
@@ -102,41 +113,36 @@ func (s *Leader) HandleConnection(conn *net.Conn) {
 }
 
 // Follower can handle reads from clients and must also handle writes from the leader.
-func (s *Follower) HandleConnection(conn *net.Conn) {
+func (f *Follower) HandleConnection(conn *net.Conn) {
 	for {
 		data, err := getNextMessage(conn)
 		if err != nil {
-			log.Fatalf("failed to read from client: %s", err)
+			log.Fatalf("follower failed to read from connection: %s", err)
 		}
 		var req Request
 		err = proto.Unmarshal(*data, &req)
 		if err != nil {
-			log.Printf("unable to interpret request %s", data)
-			s.Respond(conn, &Response{Code: Response_FAILURE, Message: "unable to deserialize request"})
+			f.Log(fmt.Sprintf("unable to interpret request %s", data))
+			f.Respond(conn, &Response{Code: Response_FAILURE, Message: "unable to deserialize request"})
 			continue
 		}
-		log.Printf("request: %s", req.PrettyPrint())
+		f.Log(fmt.Sprintf("request: %s", req.PrettyPrint()))
 		switch req.Command {
 		case Request_GET:
-			res, err := s.s.Get(req.Item.Key)
+			res, err := f.s.Get(req.Item.Key)
 			if err != nil {
-				s.Respond(conn, &Response{Code: Response_FAILURE, Message: fmt.Sprintf("get failed: %s\n", err)})
+				f.Respond(conn, &Response{Code: Response_FAILURE, Message: fmt.Sprintf("get failed: %s\n", err)})
 			} else {
-				s.Respond(conn, &Response{Code: Response_SUCCESS, Message: fmt.Sprintf("%s\n", res)})
+				f.Respond(conn, &Response{Code: Response_SUCCESS, Message: fmt.Sprintf("%s\n", res)})
 			}
 		case Request_SET:
-			err = s.s.Set(req.Item.Key, req.Item.Value)
-			if err != nil {
-				s.Respond(conn, &Response{Code: Response_FAILURE, Message: fmt.Sprintf("set failed: %s\n", err)})
-			} else {
-				s.Respond(conn, &Response{Code: Response_SUCCESS, Message: fmt.Sprintf("success: %s=%s\n", req.Item.Key, req.Item.Value)})
-			}
+			f.Respond(conn, &Response{Code: Response_FAILURE, Message: "follower only handles reads\n"})
 		}
 	}
 }
 
 func (s *Server) Respond(conn *net.Conn, resp *Response) {
-	log.Printf("response: %s", resp.PrettyPrint())
+	s.logger.Printf(fmt.Sprintf("response: %s", resp.PrettyPrint()))
 	out, err := proto.Marshal(resp)
 	if err != nil {
 		log.Fatalf("failed to serialize response: %s", err)

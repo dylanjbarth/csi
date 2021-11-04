@@ -9,5 +9,7 @@ func main() {
 	router := kv.NewRouter()
 	go router.AcceptClientConnections()
 	leader := kv.NewLeader(kv.DATA_PATH)
-	kv.AcceptRouterConnections(leader)
+	go kv.AcceptRouterConnections(leader)
+	follower := kv.NewFollower(kv.DATA_PATH)
+	kv.AcceptRouterConnections(follower)
 }

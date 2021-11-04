@@ -4,12 +4,14 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"os"
 
 	"google.golang.org/protobuf/proto"
 )
 
 type Router struct {
 	client_listener net.Listener
+	logger          *log.Logger
 }
 
 func NewRouter() *Router {
@@ -18,15 +20,15 @@ func NewRouter() *Router {
 	if err != nil {
 		log.Fatalf("failed to listen on socket tcp:%s %s", ROUTER_PORT, err)
 	}
-	return &Router{l}
+	return &Router{l, log.New(os.Stdout, "router ", log.LstdFlags)}
 }
 
 func (r *Router) AcceptClientConnections() {
 	for {
-		log.Printf("Router starting to accept client connections")
+		r.logger.Printf("Router starting to accept client connections")
 		conn, err := r.client_listener.Accept()
 		if err != nil {
-			log.Fatalf("failed to read from client: %s", err)
+			r.logger.Fatalf("failed to read from client: %s", err)
 		}
 		go r.HandleConnection(&conn)
 	}
@@ -36,38 +38,38 @@ func (r *Router) HandleConnection(conn *net.Conn) {
 	for {
 		data, err := getNextMessage(conn)
 		if err != nil {
-			log.Fatalf("failed to read from client: %s", err)
+			r.logger.Fatalf("failed to read from client: %s", err)
 		}
 		var req Request
 		err = proto.Unmarshal(*data, &req)
 		if err != nil {
-			log.Printf("unable to interpret request %s", data)
+			r.logger.Printf("unable to interpret request %s", data)
 			r.Respond(conn, &Response{Code: Response_FAILURE, Message: "unable to deserialize request"})
 			continue
 		}
-		log.Printf("request: %s", req.PrettyPrint())
+		r.logger.Printf("request: %s", req.PrettyPrint())
 		switch req.Command {
 		case Request_GET:
 			// TODO round robin / send to follower
-			res, err := r.SendToServer(&req)
+			res, err := r.SendToServer(&req, FOLLOWER_PORT)
 			if err != nil {
 				r.Respond(conn, &Response{Code: Response_FAILURE, Message: fmt.Sprintf("get failed: %s\n", err)})
 			} else {
-				r.Respond(conn, &Response{Code: Response_SUCCESS, Message: fmt.Sprintf("%s\n", res)})
+				r.Respond(conn, res)
 			}
 		case Request_SET:
-			_, err = r.SendToServer(&req)
+			res, err := r.SendToServer(&req, LEADER_PORT)
 			if err != nil {
 				r.Respond(conn, &Response{Code: Response_FAILURE, Message: fmt.Sprintf("set failed: %s\n", err)})
 			} else {
-				r.Respond(conn, &Response{Code: Response_SUCCESS, Message: fmt.Sprintf("Success: %s=%s\n", req.Item.Key, req.Item.Value)})
+				r.Respond(conn, res)
 			}
 		}
 	}
 }
 
-func (r *Router) SendToServer(req *Request) (*Response, error) {
-	conn, err := net.Dial("tcp", LEADER_PORT)
+func (r *Router) SendToServer(req *Request, port string) (*Response, error) {
+	conn, err := net.Dial("tcp", port)
 	if err != nil {
 		return nil, fmt.Errorf("unable to connect to leader server %s", err)
 	}
@@ -93,13 +95,13 @@ func (r *Router) SendToServer(req *Request) (*Response, error) {
 }
 
 func (r *Router) Respond(conn *net.Conn, resp *Response) {
-	log.Printf("response: %s", resp.PrettyPrint())
+	r.logger.Printf("response: %s", resp.PrettyPrint())
 	out, err := proto.Marshal(resp)
 	if err != nil {
-		log.Fatalf("failed to serialize response: %s", err)
+		r.logger.Fatalf("failed to serialize response: %s", err)
 	}
 	_, err = (*conn).Write(*toWireFormat(&out))
 	if err != nil {
-		log.Fatalf("failed to respond to client: %s", err)
+		r.logger.Fatalf("failed to respond to client: %s", err)
 	}
 }
