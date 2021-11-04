@@ -5,7 +5,10 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+	"log"
 	"net"
+
+	"google.golang.org/protobuf/proto"
 )
 
 // return byte array prefixed with 4 bytes containing the length of b as uint32
@@ -41,4 +44,41 @@ func (r *Request) PrettyPrint() string {
 
 func (r *Response) PrettyPrint() string {
 	return fmt.Sprintf("Code: %s; Message: %s", r.Code, r.Message)
+}
+
+func SendRequest(req *Request, port string) (*Response, error) {
+	conn, err := net.Dial("tcp", port)
+	if err != nil {
+		return nil, fmt.Errorf("unable to connect to leader server %s", err)
+	}
+	reqbytes, err := proto.Marshal(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to serialize request: %s", err)
+	}
+	_, err = conn.Write(*toWireFormat(&reqbytes))
+	if err != nil {
+		return nil, fmt.Errorf("failed to send input to server: %s", err)
+	}
+	data, err := getNextMessage(&conn)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response from server: %s", err)
+	}
+	var resp Response
+	err = proto.Unmarshal(*data, &resp)
+	if err != nil {
+		return nil, fmt.Errorf("failed to deserialize response from server: %s", err)
+	}
+	return &resp, nil
+
+}
+
+func SendResponse(conn *net.Conn, resp *Response) {
+	out, err := proto.Marshal(resp)
+	if err != nil {
+		log.Fatalf("failed to serialize response: %s", err)
+	}
+	_, err = (*conn).Write(*toWireFormat(&out))
+	if err != nil {
+		log.Fatalf("failed to respond to client: %s", err)
+	}
 }
