@@ -4,20 +4,18 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"os"
 
 	"google.golang.org/protobuf/proto"
 )
 
 type ConnHandler interface {
-	GetClientListener() net.Listener
+	GetListener() net.Listener
 	HandleConnection(*net.Conn)
 }
 
 type Server struct {
-	client_listener net.Listener
-	server_listener net.Listener
-	s               *Storage
+	request_listener net.Listener
+	s                *Storage
 }
 
 type Leader struct {
@@ -29,37 +27,37 @@ type Follower struct {
 }
 
 func NewLeader(path string) *Leader {
-	return &Leader{Server{initListener(CLIENT_SERVER_SOCKET_FILE), initListener(SERVER_SERVER_SOCKET_FILE), NewStorage(path, false)}}
+	log.Printf("Creating new leader listening on port %s and storing data %s", LEADER_PORT, path)
+	return &Leader{Server{initListener(LEADER_PORT), NewStorage(path, false)}}
 }
 
 func NewFollower(path string) *Follower {
-	return &Follower{Server{initListener(CLIENT_SERVER_SOCKET_FILE), initListener(SERVER_SERVER_SOCKET_FILE), NewStorage(path, false)}}
+	log.Printf("Creating new follower listening on port %s", FOLLOWER_PORT)
+	return &Follower{Server{initListener(FOLLOWER_PORT), NewStorage(path, false)}}
 }
 
-func initListener(fp string) net.Listener {
-	// Unlink socket to listen (ignoring errors)
-	os.Remove(fp)
-	l, err := net.Listen("unix", fp)
+func initListener(port string) net.Listener {
+	l, err := net.Listen("tcp", port)
 	if err != nil {
-		log.Fatalf("failed to listen on socket %s %s", fp, err)
+		log.Fatalf("failed to listen on port %s %s", port, err)
 	}
 	return l
 }
 
-func (l *Leader) GetClientListener() net.Listener {
-	return l.client_listener
+func (l *Leader) GetListener() net.Listener {
+	return l.request_listener
 }
 
-func (f *Follower) GetClientListener() net.Listener {
-	return f.client_listener
+func (f *Follower) GetListener() net.Listener {
+	return f.request_listener
 }
 
-func AcceptClientConnections(n ConnHandler) {
+func AcceptRouterConnections(n ConnHandler) {
 	for {
 		log.Printf("Starting to accept connections ")
-		conn, err := n.GetClientListener().Accept()
+		conn, err := n.GetListener().Accept()
 		if err != nil {
-			log.Fatalf("failed to read from client: %s", err)
+			log.Fatalf("failed to connect: %s", err)
 		}
 		go n.HandleConnection(&conn)
 	}
@@ -70,7 +68,7 @@ func (s *Leader) HandleConnection(conn *net.Conn) {
 	for {
 		data, err := getNextMessage(conn)
 		if err != nil {
-			log.Fatalf("failed to read from client: %s", err)
+			log.Fatalf("failed to read from connection: %s", err)
 		}
 		var req Request
 		err = proto.Unmarshal(*data, &req)
@@ -82,12 +80,14 @@ func (s *Leader) HandleConnection(conn *net.Conn) {
 		log.Printf("request: %s", req.PrettyPrint())
 		switch req.Command {
 		case Request_GET:
-			res, err := s.s.Get(req.Item.Key)
-			if err != nil {
-				s.Respond(conn, &Response{Code: Response_FAILURE, Message: fmt.Sprintf("get failed: %s\n", err)})
-			} else {
-				s.Respond(conn, &Response{Code: Response_SUCCESS, Message: fmt.Sprintf("%s\n", res)})
-			}
+			// TODO leader can obviously handle get requests too, but enforcing this for now.
+			s.Respond(conn, &Response{Code: Response_FAILURE, Message: "leader only handles writes\n"})
+			// res, err := s.s.Get(req.Item.Key)
+			// if err != nil {
+			// 	s.Respond(conn, &Response{Code: Response_FAILURE, Message: fmt.Sprintf("get failed: %s\n", err)})
+			// } else {
+			// 	s.Respond(conn, &Response{Code: Response_SUCCESS, Message: fmt.Sprintf("%s\n", res)})
+			// }
 		case Request_SET:
 			err = s.s.Set(req.Item.Key, req.Item.Value)
 			if err != nil {

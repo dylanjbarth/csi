@@ -24,7 +24,7 @@ func NewStorage(path string, clean bool) *Storage {
 }
 
 func (s *Storage) initStorage(clean bool) error {
-	log.Printf("attempting to init storage file %s", s.path)
+	log.Printf("Initializing storage file %s", s.path)
 	_, err := os.Stat(s.path)
 	if os.IsNotExist(err) || clean {
 		log.Printf("path doesn't exist. attempting to create it")
