@@ -118,3 +118,62 @@ If you have more than one leader, this can lead to conflicts:
 - last write wins or oldest replica wins -- both are unambiguous but will lead to data loss
 - could record the conflict and then ask the user to resolve it. 
 
+# Partitioning 
+
+aka sharding - breaking the entire dataset into chunks that are spread across nodes. 
+
+why: scalability, allows you to distribute query load across many processors. 
+goal is to spread load evenly, not doing so leads to skew and hotspots. 
+
+rule of thumb: when to shard - only when you hit physical limitations. 
+
+## partition strategies
+
+**key range partitioning**: think encyclopedia volumes. splitting your primary keys by range evely. keys spaced based on distribution of your data so may not be even. keys are sorted within partition which makes range scanning easy. be careful of hot spots: eg if key is a timestamp, that creates a heavy workload for the day on a single partition. Be sure to pick a primary key that will distribute the load evenly. 
+
+**hash partitioning**: must be fast, deterministic, and independent but doesn't need to be cryptographically strong. Distributes keys evenly. each partition gets a range of hashes. Impossible to do efficient range queries with this strategy. 
+
+Cassandra use compound key: first one is hashed, second one is how it's sorted on disk, so you get even distribution and range querying. 
+
+Even with key hashing, workload skew can happen due to a super popular key (eg celebrity ID) - falls to application to identify and reduce this skew. Eg adding a random number to beginning or end of key to split writes evenly. But this leads reads to having to do more work (query all keys and combine so more book keeping). 
+
+## handling secondary indexes
+
+**secondary indexes**: data that doesn't identify the record uniquely but is used as a way to search for occurrences, eg articles containing foo. 
+
+**document based partitioning**: aka local index. store the secondary index within each partition as a lookup by the primary key. This means you have to search across partitions. known as "scatter/gather" because you have to query all partitions and then join together. you can try and choose partitioning scheme so that secondary indexes are clustered together but not always possible. 
+
+**term-based partitioning**: aka global index. you use key range partitioning on the index itself. this can make reads more efficient because you hit a single partition that has the term you want, but writes are slower because a single document write could update many partition indexes. Updates to these indexes are therefore normally async. 
+
+## rebalancing partitions
+
+**rebalancing**: moving load from one node in the cluster to another. happens when you need to more CPUs, dataset increases, or nodes get replaced. 
+
+**don't use hash(key) mod N**: this is because if the number of nodes changes, most keys will have to change nodes. we want to move data around as little as possible when we have to rebalance. 
+
+**fixed number of partitions**: if you create many more partitions than nodes, you can logically shift a partition to a new node when you add one and not have to worry about re-partitioning. new nodes can steal a partition. While rebalancing, old partition is used until it's complete. works best with key hashing partitioning strategy. 
+
+**dynamic partitioning** works better with key-range partitions. when range exceeds configured size, it's split in half. if it shrinks below, it gets merged. advantage is that partitions adapt to total data volume. This can also work for hash based partitioning. 
+
+**proportional to nodes**: partition size grows proportionally to dataset size, but when you add node partitions shrink again
+
+## automatic or manual rebalancing 
+
+automated is convenient because of less work but can be unpredictable, so many systems tee it up but have human in loop. 
+
+## request routing 
+
+1. **node forwarding** clients contact any node and node services or forwards
+2. **routing tier**
+3. **client aware**
+
+most systems rely on coordination service to keep routing components informed. Nodes register with service discovery system, eg ZooKeeper and it is the authoritative mapping to nodes, zookeeper then updates routing layers. 
+
+another approach is gossip protocol, where nodes talk to each other. 
+
+## Misc notes 
+
+- consistent hashing: way to distribute load evenly across internet wide system of caches such as CDN. 
+
+"fundamentally we want to partition based on load not based on key"
+
