@@ -99,7 +99,9 @@ Leader failover (when leader is unavailable and a new leader is chose) can be tr
 
 Replication log strategies: WAL is good because it's the data being written but it's storage implementation specific. Logical log similar idea but less coupled to storage allowing for backward compatibility (eg leader and follower could run different versions of software)
 
-**eventual consistency** an effect where data read from a follower may be outdated because of the replication lag between it and the leader. 
+**eventual consistency** an effect where data read from a follower may be outdated because of the replication lag between it and the leader. if all writes stopped, you will get the current answer after some indeterminate amount of time. 
+
+**bounded staleness**: making eventual consistency stricter by enforcing a maximum of replication lag. 
 
 **read after write consistency** guarantee that if user reloads page, they will see the updates they have submitted even in an eventually consistent system. 
 
@@ -176,4 +178,49 @@ another approach is gossip protocol, where nodes talk to each other.
 - consistent hashing: way to distribute load evenly across internet wide system of caches such as CDN. 
 
 "fundamentally we want to partition based on load not based on key"
+
+# Consistency & Consensus 
+
+**consensus**: getting all nodes in a system to agree on something in spite of network faults or process failures. 
+
+guarantee tradeoff: eventual consistency is hard to work with as an app developer because it's a leakier abstraction, but there is a tradeoff in performance. In general, the stronger the guarantee is the worse the performance or less fault tolerant a system is. 
+
+**linearizability**: aka atomic consistency, strong consistency, immediate consisteny, or external consistency -- an abstraction or guarantee that makes it appears as if it were the only copy of the data and all operations are atomic. Thus application doesn't have to think about any of the complexity of the distributed system. It's a recency guarantee. 
+
+**serializability**: guarantee that transaction behave as if they had executed in some serial order (isolated)
+
+## Use cases for consensus: 
+
+* leader election and locking: only want one leader and to elect need a lock. 
+* constraints / uniqueness guarantees: need all nodes to agree on the value -- this is the atomic commit problem. 
+* avoid race conditions across nodes (example of an async image resize)
+
+**CAP theorem**: either consistent or available when partitioned -- if you requir linearizability and some replicas disconnect, you are down until they come back up. if you don't require it, you can be more fault tolerant but behavior is not linearizable. 
+
+linearizability is often dropped for fault tolerance but mainly for performance. most systems aren't linearizable. it's proven that it's slow because of uncertain delays on the network. thus we go for weaker consistency guarantees to get performance. 
+
+**total order** any two elements can be compared  vs **partial order** some operations are ordered with respect to each other but some are incomparable. 
+
+linearizable systems have total order of operations, whereas causality just defines a partial order. Some operations are ordered relative to each other but others are incomparable. THis is like Git version history -- sometimes commits are one after another, other times they branch and merges are created when commits are combined. 
+
+linearizability implies **causal consistency** (but not the other way around) - causal consistency just means that you know which operations happened before which other operation -- must be able to describe the knowledge of a node in the system (did this know X before Y)
+
+example: collaborative editing - you need to know the order of writes within a document, but not across documents. 
+
+to get causal consistency in a performant way, we need global sequence ordering - logical clock instead of physical clock - example **Lamport timestamp** which is just a tuple of (counter, nodeID), and each request includes the greatest counter read, so if client has read a greater counter from another node, node2 counter is updated to that counter when the request from the client comes in. 
+
+this defines a total order of operations but doesn't give you a way to enforce constraints eg uniqueness constraints. to do this you need **total order broadcast**: protocol for exchanging messages between nodes that ensures no messages are lost and that messages are delivered to all nodes in order (even if node or network is faulty) -- this is implemented by ZooKeeper and etcd. If all messages are delivered and in the same order, machines stay consistent with each other -- this is called **state machine replication**. 
+
+**Two-Phase Commit (2PC)** a way to achieve an atomic transaction across multiple nodes -- all commit or all abort -- via 2 phases: coordinator sends a prepare request - if all reply yes, then send out a commit request, if any say no, abort request is sent. 2 points of "no return" -- when they vote yes, they must be able to commit it later, and once the coordinator decides, it can't go back either and must retry forever until the message gets through. 
+
+Pros and cons of distributed transactions: important for safety, but crappy performance (caused by forcing to disk and more network round trips.) Also if the coordinator dies, locks are being held by the participants causing your application to become unavailable. Basically just best to resolve manually, although there are some ways to add heuristics to recover automatically. 
+
+**Byzantine faults**: when a node in a network deliberately is subverting the system's guarantees. 
+
+**Byzantine Generals Problem**: finding consensus in a network where the nodes may lie or not respond with the truth
+
+
+
+### Notes on Raft talk 
+
 
