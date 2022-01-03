@@ -221,6 +221,106 @@ Pros and cons of distributed transactions: important for safety, but crappy perf
 
 
 
-### Notes on Raft talk 
+# Batch Processing 
+- ask yourself: do I have the volume of data that the time to read the data is so high that I need to parallelize it across nodes
+- distinct from stream processing because the input data set is bounded, of a known size (vs unbounded stream processing)
+- offline system - no user waiting on other end - jobs scheduled to run periodically to process data, eg once a day -- measured in throughput (bytes over time) 
+- MapReduce introduced by Google in 2004, original purpose was to build search indexes. Made more fault tolerant than necessary as a way to be able to utilize as much compute resource as possible (allowing OS to kill jobs and for servers to be over provisioned with work to do to ensure underutilization didn't happen)
 
+## Unix 
+- parallel to unix tools because you have a standard interface and tools that just do one job and can be composed together. output of one program becomes the input to another. 
+  - this is supported by a a uniform interface -- files (which can be a lot of things, just an ordered sequence of bytes, but could be actual file, a socket, device driver, etc)
+  - loose coupling - they just use stdin and stdout, don't care much about each other. can stream to each other. 
+  - allows for experimentation 
 
+## Distributed File systems
+- distributed file system is the unified interface for batch processing frameworks (eg Hadoop input and output is HDFS)
+- overcomes issue with unix tools which is that they only run on a single node 
+- **HDFS**: hadoop file system - shared nothing architecture, just a bunch of nodes running a daemon that allows nodes to talk to each other, with a central server that stores a directory of file blocks (with redundancy). 
+
+## Map Reduce 
+abstraction of a distributed system hidden via a restricted programming model -- engineers just implement map and reduce callbacks that follow the programming guidelines of not having sideaffects and then you get partitioning, big data processing and fault tolerance for free.
+
+1. input files broken into records (eg a line in a log file)
+2. mapper is called which outputs key, value pairs
+3. Key value pairs are sorted by key
+4. Reducer is called to iterate over sorted kv pairs. Same keys are adjacent 
+
+mapper prepares the data, putting it in sortable format and directing it via the key, and the reducer processes the data once it's been sorted. 
+
+MapReduce scheduler triens to run mapper on machines that store the replice of the input file so that it doesn't have to be transferred across the network initally. 
+
+Joins and grouping can happen in reducer side or the mapper side. Reducer side joins and group bys generally just involved using the key that the mapper produces to ensure the pair lands in the right reducer (eg natural sort merge join). Map side joins can be less expensive if you know enough about your input data - if you have a small dataset, the mapper can read that into memory and merge records onto it (called a broadcast hash join), if inputs are partitioned you can do this same idea for each partition, or if it's sorted. 
+
+Generally map reduce outputs files which then can be loaded elsewhere. 
+
+Use cases: building search indexes, building machine learning systems. 
+
+Key point: map reducers must not have side affects, must completely fail or not and should be re-runnable without sideaffects. Similar to the unix philosophy. 
+
+Hadoop exposed this idea of the sushi principles: raw data is better. Allows more use cases to form on top of it, less restriction in what can happen with the data. 
+
+## Other systems
+
+High level APIs on top of Map Reduce: Pig, Hive, Cascading, Crunch -- to make MR easier to work with. 
+
+Dataflow engines: Spark, Tez, Flink:  have the advantage of skipping materialization and can thus be faster (maybe less fault tolerant because you have to track more state and do more stuff over if a node fails.) Less strict, no requirement for map reduce, just composable operators, 
+
+# Stream Processing 
+
+core difference with batch processing is that the data set is unbounded vs batch processing it's bounded (a lot of this is just arbitrary, where you draw the lines, because new data is really flowing in almost all the time)
+
+**stream**: data that is made incrementally available over time
+
+## how are streams represented, stored, and transmitted?
+
+event can be stored as anything -- text, binary, json, etc -- can be a user action, a reading from a sensor, a metric, etc. 
+
+**producer/publisher/sender**: generator of events
+**consumer/subscriber/recipient**: processor of events
+**topic/stream**: grouping of events
+
+### Messaging based systems
+
+tradeoffs for messaging systems -- can use backpressure (like TCP, block sender until buffer clears), can queue, or drop messages -- depends on workload for what is acceptable 
+
+**message broker/queue**: acts as a server, publishers write to it and consumers read from it. kind of like a DB but different because they remove messages when they've been delivered, so not for long-term data storage, and don't support querying just subscribing to topics. 
+
+**load balancing**: message delivered to one of consumers so consumers share load in processing. 
+**fan out**: delivery to all consumers (here I assume consumers do different jobs with the same data?) 
+
+messages are redelivered if not acknowledged explicitly by the client (this can lead to messages being delivered out of order)
+
+### Log based systems
+
+append only log and consumers can subscribe to a partition, supports fan out. this is good for situations where you have high message throughput and each message is fast to process and you want to process it in order. If you have variable speed message processing, order isn't important, and you want to parallelize message handling, doing a message based approach is better. 
+
+logs are basically stored in ring buffer because eventually you need to free disk space. 
+
+having messages in logs allows you to replay messages. 
+
+## databases and streams
+
+to keep systems in sync, you can use **dual writes** but this is slow and hard to coordinate (eg if one fails)
+
+**change data capture** - idea here is to observe changes written to DB and extract to write to other systems, basically subscribing to the WAL. 
+
+**event sourcing**: store all changes to application state as a log of change events. different from CDC because here you are using the event log as the source of truth BEFORE application state is mutated, in CDC you are subscribing to the changes in application state. 
+
+log compaction: with CDC you can discard events that have been superceded eg a clear delete so you can remove the insert. In event sourcing the event itself expresses intent of user action, not state transition, so unclear if you can remove. Instead you can create a snapshot of state, and recover from there to prevent reading the whole log. 
+
+command vs event -- initial request is a command when it's accepted it becomes a fact or event. 
+
+immutability in event logs: advantage of having more information about the system and how users are interacting with it
+
+## processing streams 
+
+use cases: searching streams, complex event processing (looking for patterns), computing aggregations for analytics, and keeping other systems up to date 
+
+joins: 
+
+**stream-stream joins**: joining data across or within streams within the same time window 
+**stream-table joins**: joining data in stream with relational data - keep local copy of up to date subset like user ID lookup. 
+**table-table joins**: two DB changelogs getting merged together
+
+to achieve fault tolerance: microbatching, checkpointing, transactions, and idempotent writes. 
