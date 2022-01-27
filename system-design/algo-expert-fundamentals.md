@@ -84,3 +84,15 @@ in both cases, you reduce remapping churn when servers are added or removed.
 
 # Relational databases
 - relational = tabular, structures for storing data representing an entity 
+- ACID - atomicity, consistency, isolation, durability. 
+- think about the type of database - what do you need from your database?
+
+# Key Value Stores
+- keys that map to arbitrary values (like hash tables)
+- flexible and simple. fast lookup. limited in what you can query though. 
+
+# Specialized Storage Paradigms 
+- blob store - GCS or S3 - blob = binary large object - any arbitrary piece of unstructured data - store massive amounts of unstructured data. Azure blob store. acts like a key value store, but not the same thing - optimized for different use cases. 
+- time series database: influxdb or prometheus - used for logging / monitoring purposes, stores timeseries data (events that happen), computing averages, etc. 
+- Graph DB: neo4j, data that relies on relationships, db built on graph data model, relationship between points is core. 
+- Spatial DB: optimized for spatial data, geometric space - locations on a map, eg designing google maps. Queries like "distance between X & Y" - rely on spatial indices. Quadtree => like a binary tree but each node has 0 or 4 child nodes. think of it like a grid - start from the top and break it down further into sub grids. Continue subdividing until you have fewer than N locations (so you get more granularity). 
