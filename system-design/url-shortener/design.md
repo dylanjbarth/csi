@@ -36,6 +36,8 @@ Design a URL shortener that can be used to redirect from a short URL to the orig
 #### hashing
 - Due to the requirement that each shortened link be unique, we could consider a strategy where we hash the link and mod it to our address space, but because this is deterministic it could be used as an attack vector, and why risk remote chance of a collision when hashing doesn't provide a clear benefit (other than being able to generate the link on the fly). 
 
+Also, one of the requirements here is that we return a unique shortened link per user. What if a user had a use case where they wanted to generate two shortened URLs for the same target? We wouldn't be able to support this cleanly with a hashing strategy. 
+
 #### pre-generation 
 - we want to be sure that we never run out of links, and we can't predict if demand will grow in the future so let's make sure we won't run out for 100 years given our current load estimate? 
 - 4B links per year means 4e11 in 100 years or 400 billion unique links. 
@@ -43,7 +45,7 @@ Design a URL shortener that can be used to redirect from a short URL to the orig
 - uppercase is equivalent to lowercase, so we have [a-z] and [0-9] to work with basically, which is 36 total characters. 
 - if we assume we want to limit to about 5-10 chars, plus the domain and tld, 36^8 => 656,100,000,000. Worst case scenario in 2122 if the internet still exists they can add another character. 
 - So if each link is 8 chars, 8 bytes => 5.248e12 B => 5.248 TB of ids if we generated all 656 billion.
-- That's quite a lot of links. What we could do to simplify here is to pregenerate them, but then just grab the first years worth (4B) and distribute them. 
+- We can put these links into a central store and individual service nodes can request new links to use from this service, ensuring that we don't distribute duplicated links. This could just be a single table relational DB (partitioned) to take advantage of ACID transactions, marking links that are consumed as used.  
 
 ## Storage
 
@@ -51,20 +53,18 @@ It makes sense to use a highly-available key value store (dynamo, cassandra) vs 
 
 At 4TB of storage per year, we'd have no trouble storing all of this data on a single disk for quite awhile, but for high-availability we are going to want to replicate it across least 2 AZs / regions. 
 
-For click storage, we know we want to use that information for analytics later, so it makes sense to just log each click and send it off to a data lake / blob storage. 
+For click storage, we know we want to use that information for analytics later, so it makes sense to just log each click and send it off to a data lake / blob storage. Downstream we could layer on MapReduce jobs to aggregate metrics we care about and then push these into a datastore to serve our analytics dashboard. 
 
 ## Major Components
-- for HA purposes, let's assume we have a 3 datacenter setup, multi-leader setup with each datastore asynchronously replicating writes to each other, and DNS geo-IP based load balancing to direct writes to the nearest API.  
-- to avoid conflicting keys, each datacenter can simply be seeded with a different chunk of our 4B pre-generated IDs. 
-- 1.3B ids of 8 bytes each would be 8.3 GB of IDs
-- in each datacenter we have a loadbalancer that round robins requests to a server cluster which grabs an ID (TODO from where, how do we mark the ID as used and ensure it's atomic), inserts the link into our KV store, and returns the ID to the original requester. This new entry is propagated to our other KVs around the world within a few seconds.
-- each new link pair that is created is stored in-memory cache and used to serve read requests. any read requests that cause a cache miss will be read from the KV store and stored in an LRU cache.  
-- can cache links created in memory within past 24 hours, 10M links = 80MB + 1kb *10M => 10 GB => that will fit in memory on a server (chunky but will fit) 
-
+- for HA purposes, let's assume we have a 3 datacenter setup, multi-leader setup with each datastore asynchronously replicating writes to each other, and DNS geo-IP based load balancing to direct writes to the nearest API.
+- we can partition the datastore based on the hash of the key (link, user ID) to ensure an even distribution. 
+- in each datacenter we have a loadbalancer that round robins requests to a server cluster which maintains an in-memory queue of available IDs (these are guaranteed unique because they have been requested from our key generator service), inserts the link into our KV store, and returns the ID to the original requester. This new entry is propagated to our other KVs around the world within a few seconds.
+- each new link pair that is created is also stored in an in-memory cache and used to serve read requests. any read requests that cause a cache miss will be read from the KV store and stored in an LRU cache.  
+- can cache links created in memory within past 24 hours, 10M links = 80MB + 1kb *10M => 10 GB => that will easily fit in memory on a server. 
 
 ## Architecture Diagram
 
-TODO 
+![](./arch.png)
 
 ## Things I missed in original design
 - peeked at https://www.educative.io/courses/grokking-the-system-design-interview/m2ygV4E81AR 
@@ -72,4 +72,13 @@ TODO
 1. Did not even think about partitioning.. Dang it.
 2. Did not think all the way through how to store and distribute the keys once they were pre-generated. That article suggests a "Key Generation Service". 
 3. I was pretty low relative to this solution on the amount of cache memory needed, and hand-wavy about how the cache would actually work (eg didn't mention redis / memcached).
-4. Didn't map out the DB schema. 
+4. Didn't map out the DB schema.
+
+# Questions during class
+- good rule of thumb for meeting an "HA" requirement like is having a single replica enough? 
+- good rule of thumb for reaching for partitioning... 1B rows? 500M rows? 
+- good rule of thumb for "how many nodes do we need in our cluster" -- is this just finding the bottleneck, like 100 rps, each request is X memory, accounting for network latency, etc. 
+
+# Other ideas
+- could completely separate out the reads and write infrastructure
+- when writes happen, could publish it on a topic, have reader nodes that listen and immediately cache
