@@ -22,7 +22,7 @@ Design a URL shortener that can be used to redirect from a short URL to the orig
 ### writes 
 - write volume: 10M writes per day / 84600 s = ~120 writes per second.
 - link volume: 10M links per day * 365 = 3.65B => ~4B links per year or ~40 billion over 10 years. 
-- link storage: 1 link could be up to 2KB, but most will be much shorter, so assume 1KB per link, userID, and shortened link on the high end => 4e9 KB => 4TB per year
+- link storage: 1 link could be up to 16KB, but most will be much shorter, so assume 1KB per link, userID, and shortened link on the high end => 4e9 KB => 4TB per year
 - write bandwidth: 120 KB / s
 
 ### reads 
