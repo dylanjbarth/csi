@@ -78,6 +78,7 @@ For click storage, we know we want to use that information for analytics later, 
 - good rule of thumb for meeting an "HA" requirement like is having a single replica enough? 
 - good rule of thumb for reaching for partitioning... 1B rows? 500M rows? 
 - good rule of thumb for "how many nodes do we need in our cluster" -- is this just finding the bottleneck, like 100 rps, each request is X memory, accounting for network latency, etc. 
+- in general, I assume we basically need to exahaustively justify everything (according to NALSD approach) - start with a single node and justify each component? At what point can you just say "I am plugging in a highly available load balancer". The complexity just seems to grow exponentially.
 
 # Other ideas
 - could completely separate out the reads and write infrastructure
