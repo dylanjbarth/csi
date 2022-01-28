@@ -47,7 +47,7 @@ Design a URL shortener that can be used to redirect from a short URL to the orig
 
 ## Storage
 
-It makes sense to use a highly-available key value store (etcd) vs a relational database as our primary storage, because all we really need to be able to do is store the short URL as the key to the long-url and user ID. We wouldn't need a relational DB for anything it's good for, like querying.
+It makes sense to use a highly-available key value store (dynamo, cassandra) vs a relational database as our primary storage, because all we really need to be able to do is store the short URL as the key to the long-url and user ID. We wouldn't need a relational DB for anything it's good for, like querying.
 
 At 4TB of storage per year, we'd have no trouble storing all of this data on a single disk for quite awhile, but for high-availability we are going to want to replicate it across least 2 AZs / regions. 
 
@@ -62,6 +62,14 @@ For click storage, we know we want to use that information for analytics later, 
 - can cache links created in memory within past 24 hours, 10M links = 80MB + 1kb *10M => 10 GB => that will fit in memory on a server (chunky but will fit) 
 
 
-## Architecture 
+## Architecture Diagram
 
 TODO 
+
+## Things I missed in original design
+- peeked at https://www.educative.io/courses/grokking-the-system-design-interview/m2ygV4E81AR 
+
+1. Did not even think about partitioning.. Dang it.
+2. Did not think all the way through how to store and distribute the keys once they were pre-generated. That article suggests a "Key Generation Service". 
+3. I was pretty low relative to this solution on the amount of cache memory needed, and hand-wavy about how the cache would actually work (eg didn't mention redis / memcached).
+4. Didn't map out the DB schema. 
