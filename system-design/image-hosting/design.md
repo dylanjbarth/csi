@@ -1,3 +1,9 @@
+TODO: 
+
+1. ERD 
+2. cost estimate 
+3. Review numbers -- do we even need a queue? Did I do the math wrong?
+
 # Problem Statement
 
 Design an image hosting service. Users should be able to upload "normal sized" images and receive a link that they can share with others to view the image at various sizes/resolutions. 
@@ -53,7 +59,7 @@ Let's think through how to store the rest of the system data. At a minimum, we'l
 
 We know that at a minimum we want to be able to do fast lookups based on the image key. Initially this might indicate that a KV store would be a good choice here. However, in future, we may want to be able to query based on relationships between users and photos (eg to show a dashboard to the user). For downstream image processing, we will also want to take advantage of ACID features we get in a relational DB. Also, as we will see below, the amount of data we need to store annually is relatively small, so we likely won't have to think about partitioning for a few years so the added complexity of partitioning our relational DB shouldn't be a major factor in our decision making process. 
 
-If two users upload the same photo, we don't want to reprocess it. We can use a hash function (eg MD5 because it doesn't need cryptographic guarantees) to generate deterministic IDs for each piece of unique content uploaded. If a second user uploads the same exact photo, once we hash it we will see we already have a record for this image and associat the existing record with the second user in addition to the first.
+If two users upload the same photo, we don't want to reprocess it. We can use a hash function (eg MD5 could be fine because it's sort of fast and we don't need cryptographic guarantees) to generate deterministic IDs for each piece of unique content uploaded. If a second user uploads the same exact photo, once we hash it we will see we already have a record for this image and associat the existing record with the second user in addition to the first.
 
 We can have 3 tables: 
 
@@ -106,33 +112,29 @@ High level flow of an upload request:
 5. Stream the image to our blob storage, using the hash as the key. 
 6. Put a message on a queue to alert our image processing service about a new image to resize.
 7. Return shareable link to user with the image hash. 
-8. Async, the image processing service will load the file back into memory, generate different sizes, writing these to blob storage and updating the KV store accordingly. If it completes successfully, it marks the message as processed from the queue. Otherwise it's retried by a different worker. 
+8. Async, the image processing service will load the file back into memory, generate different sizes, write these to blob storage and update the database accordingly. If it completes successfully, it marks the message as processed from the queue. Otherwise the message remains on the queue and is retried by a different worker. 
 
-## Load Estimation of Photo Processing
+## Load Estimation Revisited for Photo Processing
 
-Let's assume the average internet user has 3Mbps upload speed => ~375KB/s upload. this means it will take a 2MB file ~5 seconds to upload. If we begin 6 uploads per second, this means we would have 30 images in progress at any given time. Let's round this up to 50 to be safe. Assuming that the CPU time to hash and validate the images will be negligible and that we have much faster network speeds within our datacenter (maybe 1-5GB/s) the rest of the request should take no more than a few ms.
+### Upload servers
+Let's assume the average internet user has 3Mbps upload speed => ~375KB/s upload. this means it will take a 2MB file ~5 seconds to upload. If we begin 6 uploads per second, this means we would have 30 images in progress at any given time. Let's round this up to 50 to be safe. Assuming that the CPU time to hash and validate the images will be microseconds and that we have much faster network speeds within our datacenter (maybe 5Gbps, so 625MB/s) the rest of the request should take no more than a few ms. This means we will need 100MB of memory minimum to buffer our images for validation and hashing, and since our bottleneck is waiting on network requests (eg we don't need to do anything in parallel because the CPU is doing work only a fraction of the time), we can easily fit this workload on a single, commodity machine, eg AWS t3.small	with 2vCPUs and 2GB RAM. To improve availability, we can still load balance these requests in a round robin fashion across 2 or more commodity servers in different AZs.
 
-This means we will need 100MB of memory minimum to buffer our images for validation and hashing, which can easily fit on a single machine. We also know that we will be querying our relational DB ~60 times per second and writing ~10 times per second, which should be easily managed on a single machine as wel. 
+### Database server
+We know that we will be querying our relational DB ~60 times per second assuming worst case we miss the CDN cache every time and writing to it ~10-20 times per second, which can be easily managed by a single-node database. We can add a warm-standby with async replication to achieve our availability SLO.
 
-For redundancy, we can still load balance these requests in a round robin fashion across 2 or more commodity servers. 
+### Queue consumers
+We expect messages to appear on the "uploaded_images" queue at a rate of 6-10 per second. For each message, we download the image from our blob store (within datacenter, so 2MB/625MB/s would be .003 seconds per download), with all of these buffered in memory we use 20 MB memory. We resize/compress once it's fully buffered (350KB additional memory per image, ~3.5MB additional memory consumed, assume microseconds of CPU time), hash (microseconds), write new hashes to DB (50ms max), and write new objects to our blob storage (.01 seconds). So a single machine should also easily be able to handle this workload, but we can again load balance this between 2 or more servers in different AZs for availability purposes. 
 
 # System Components
 
+not shown: RDS would need to have a single async replication/warm standby for failover in second AZ. similarly, servers processing requests and consuming from queue would always have at least 2 up (could scale up based on load spikes), and at least one in separate AZ at any given time. 
 
+![components](./components.png)
 
-"normal" sized images 
-500k uploads per day
-5M views per day 
-should support basic analytics 
-Growth: 30-50% a year, tapering off after a few years - expecting to grow into 5M views per day 
-Max image size: (probably 5-10MB)
-Get shareable URL within 10 seconds, but we may have more processing to do subsequently. 
-May put ads on the shared image page at some time. 
-Latency: 
-- minimize latency: 300ms global latency, p95
-- < 10 seconds to get a shareable URL 
-- offer variety of standard resolution sizes, default is based on user device but can select others (S, M, L, Original)
-- decide what image formats we constrain to, but be liberal in what we accept and restrictive in what we output 
-- allow for online editing / cropping, etc. 
-- no expiration 
-- "working with larger amounts of data, input validation, offline processing, 
+# Cost Estimate 
+- load balancer
+- S3 storage
+- EC2 cluster (for upload requests)
+- CDN (for reads)
+- message queue
+- queue workers

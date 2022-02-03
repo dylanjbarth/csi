@@ -1,0 +1,139 @@
+<mxfile host="65bd71144e">
+    <diagram id="NZMv3FGw0rl5zuc_6rAC" name="Page-1">
+        <mxGraphModel dx="1024" dy="708" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" background="#E6E6E6" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="2" value="" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;strokeColor=#050505;strokeWidth=3;labelBackgroundColor=none;" vertex="1" parent="1">
+                    <mxGeometry x="320" y="700" width="30" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="8" value="&lt;font style=&quot;&quot;&gt;upload request&lt;/font&gt;" style="edgeStyle=none;html=1;strokeColor=#050505;labelBackgroundColor=#E6E6E6;fontColor=#0A0A0A;" edge="1" parent="1" source="3" target="10">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="260" y="570" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="3" value="" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;strokeColor=#050505;strokeWidth=3;labelBackgroundColor=none;" vertex="1" parent="1">
+                    <mxGeometry x="380" y="700" width="30" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="43" style="edgeStyle=none;curved=1;html=1;entryX=0.31;entryY=0.8;entryDx=0;entryDy=0;entryPerimeter=0;labelBackgroundColor=none;fontColor=#050505;strokeColor=#050505;" edge="1" parent="1" source="4" target="42">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="44" value="view image request&lt;br&gt;eg imghost.com/b460dd0b833577ddfff29231c14726a5?size=large" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontColor=#0A0A0A;labelBackgroundColor=#E6E6E6;" vertex="1" connectable="0" parent="43">
+                    <mxGeometry x="0.0764" y="4" relative="1" as="geometry">
+                        <mxPoint x="75" as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="4" value="" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;strokeColor=#050505;strokeWidth=3;labelBackgroundColor=none;" vertex="1" parent="1">
+                    <mxGeometry x="440" y="700" width="30" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="5" value="" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;strokeColor=#050505;strokeWidth=3;labelBackgroundColor=none;" vertex="1" parent="1">
+                    <mxGeometry x="500" y="700" width="30" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="7" value="" style="whiteSpace=wrap;html=1;strokeColor=#050505;strokeWidth=3;fillColor=none;labelBackgroundColor=none;" vertex="1" parent="1">
+                    <mxGeometry x="20" y="60" width="840" height="440" as="geometry"/>
+                </mxCell>
+                <mxCell id="18" style="edgeStyle=none;html=1;labelBackgroundColor=none;fontColor=#050505;strokeColor=#050505;" edge="1" parent="1" source="10" target="13">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="19" style="edgeStyle=none;html=1;labelBackgroundColor=none;fontColor=#050505;strokeColor=#050505;" edge="1" parent="1" source="10" target="15">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="20" style="edgeStyle=none;html=1;labelBackgroundColor=none;fontColor=#050505;strokeColor=#050505;" edge="1" parent="1" source="10" target="14">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="10" value="Load Balancer (eg AWS ALB)" style="ellipse;whiteSpace=wrap;html=1;fontColor=#050505;strokeColor=#050505;strokeWidth=3;fillColor=none;labelBackgroundColor=none;" vertex="1" parent="1">
+                    <mxGeometry x="110" y="500" width="300" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="11" value="blob storage (eg AWS S3)" style="rounded=1;whiteSpace=wrap;html=1;fontColor=#050505;strokeColor=#050505;strokeWidth=3;fillColor=none;labelBackgroundColor=none;" vertex="1" parent="1">
+                    <mxGeometry x="130" y="60" width="530" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="24" value="1. insert image row" style="edgeStyle=none;html=1;entryX=0.5;entryY=1;entryDx=0;entryDy=0;entryPerimeter=0;labelBackgroundColor=#E6E6E6;fontColor=#050505;strokeColor=#050505;exitX=0.5;exitY=0;exitDx=0;exitDy=0;" edge="1" parent="1" source="15" target="22">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="25" value="2. write original image&lt;br&gt;to blob storage" style="edgeStyle=none;html=1;entryX=0.045;entryY=1.05;entryDx=0;entryDy=0;labelBackgroundColor=#E6E6E6;fontColor=#050505;strokeColor=#050505;entryPerimeter=0;exitX=0.388;exitY=-0.043;exitDx=0;exitDy=0;exitPerimeter=0;curved=1;" edge="1" parent="1" source="15" target="11">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="154" y="340"/>
+                            <mxPoint x="110" y="280"/>
+                            <mxPoint x="110" y="190"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="13" value="upload&amp;nbsp;&lt;br&gt;server" style="ellipse;whiteSpace=wrap;html=1;fontColor=#050505;strokeColor=#050505;strokeWidth=3;fillColor=none;labelBackgroundColor=none;" vertex="1" parent="1">
+                    <mxGeometry x="110" y="370" width="80" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="14" value="upload&amp;nbsp;&lt;br&gt;server" style="ellipse;whiteSpace=wrap;html=1;fontColor=#050505;strokeColor=#050505;strokeWidth=3;fillColor=none;labelBackgroundColor=none;" vertex="1" parent="1">
+                    <mxGeometry x="290" y="370" width="80" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="29" value="3. add img hash &lt;br&gt;to queue" style="edgeStyle=none;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;labelBackgroundColor=#E6E6E6;fontColor=#050505;strokeColor=#050505;curved=1;" edge="1" parent="1" source="15" target="28">
+                    <mxGeometry x="0.3099" y="-43" relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="370" y="220"/>
+                        </Array>
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="15" value="upload&amp;nbsp;&lt;br&gt;server" style="ellipse;whiteSpace=wrap;html=1;fontColor=#050505;strokeColor=#050505;strokeWidth=3;fillColor=none;labelBackgroundColor=none;" vertex="1" parent="1">
+                    <mxGeometry x="200" y="370" width="80" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="21" value="round-robin" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontColor=#050505;labelBackgroundColor=none;" vertex="1" parent="1">
+                    <mxGeometry x="290" y="460" width="80" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="22" value="DB (eg AWS RDS postgres)" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fontColor=#050505;strokeColor=#050505;strokeWidth=3;fillColor=none;labelBackgroundColor=none;" vertex="1" parent="1">
+                    <mxGeometry x="200" y="180" width="80" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="23" value="validate&lt;br&gt;&amp;amp; hash" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontColor=#050505;labelBackgroundColor=none;" vertex="1" parent="1">
+                    <mxGeometry x="40" y="390" width="60" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="28" value="queue (eg AWS SQS)" style="shape=process;whiteSpace=wrap;html=1;backgroundOutline=1;fontColor=#050505;strokeColor=#050505;strokeWidth=3;fillColor=none;labelBackgroundColor=none;" vertex="1" parent="1">
+                    <mxGeometry x="480" y="360" width="300" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="32" style="edgeStyle=none;curved=1;html=1;entryX=0.35;entryY=-0.017;entryDx=0;entryDy=0;entryPerimeter=0;labelBackgroundColor=none;fontColor=#050505;strokeColor=#050505;" edge="1" parent="1" source="30" target="28">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="37" style="edgeStyle=none;curved=1;html=1;labelBackgroundColor=none;fontColor=#050505;strokeColor=#050505;" edge="1" parent="1" source="30" target="22">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="38" value="&lt;span style=&quot;&quot;&gt;&lt;br&gt;&lt;/span&gt;" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontColor=#050505;labelBackgroundColor=none;" vertex="1" connectable="0" parent="37">
+                    <mxGeometry x="-0.0924" y="-1" relative="1" as="geometry">
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="41" value="&lt;span style=&quot;&quot;&gt;update image record&lt;/span&gt;" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontColor=#050505;labelBackgroundColor=#E6E6E6;" vertex="1" connectable="0" parent="37">
+                    <mxGeometry x="-0.0288" y="1" relative="1" as="geometry">
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="39" style="edgeStyle=none;curved=1;html=1;entryX=0.75;entryY=1;entryDx=0;entryDy=0;labelBackgroundColor=none;fontColor=#050505;strokeColor=#050505;" edge="1" parent="1" source="30" target="11">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="30" value="queue worker" style="ellipse;whiteSpace=wrap;html=1;fontColor=#050505;strokeColor=#050505;strokeWidth=3;fillColor=none;labelBackgroundColor=none;" vertex="1" parent="1">
+                    <mxGeometry x="560" y="210" width="70" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="33" style="edgeStyle=none;curved=1;html=1;entryX=0.727;entryY=0.017;entryDx=0;entryDy=0;entryPerimeter=0;labelBackgroundColor=none;fontColor=#050505;strokeColor=#050505;" edge="1" parent="1" source="31" target="28">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="40" value="write smaller&lt;br&gt;images to&amp;nbsp;&lt;br&gt;blob store" style="edgeStyle=none;curved=1;html=1;entryX=0.811;entryY=1;entryDx=0;entryDy=0;entryPerimeter=0;labelBackgroundColor=#E6E6E6;fontColor=#050505;strokeColor=#050505;" edge="1" parent="1" source="31" target="11">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="31" value="queue worker" style="ellipse;whiteSpace=wrap;html=1;fontColor=#050505;strokeColor=#050505;strokeWidth=3;fillColor=none;labelBackgroundColor=none;" vertex="1" parent="1">
+                    <mxGeometry x="640" y="210" width="70" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="34" value="long-poll for&amp;nbsp;&lt;br&gt;new images to &lt;br&gt;compress/resize" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontColor=#050505;labelBackgroundColor=none;" vertex="1" parent="1">
+                    <mxGeometry x="590" y="290" width="100" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="36" value="1. resize/compress&lt;br&gt;2. hash&lt;br&gt;3. Write to blob store&lt;br&gt;4. update image record in DB&lt;br&gt;5. rm message from queue" style="text;html=1;align=left;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontColor=#050505;labelBackgroundColor=none;" vertex="1" parent="1">
+                    <mxGeometry x="680" y="120" width="170" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="45" value="cache miss: upload server&amp;nbsp;&lt;br&gt;finds image, looks up in blob store&lt;br&gt;and returns img to CDN" style="edgeStyle=none;curved=1;html=1;labelBackgroundColor=#E6E6E6;fontColor=#0A0A0A;strokeColor=#050505;" edge="1" parent="1" source="42" target="14">
+                    <mxGeometry x="-0.4091" y="-18" relative="1" as="geometry">
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="42" value="CDN&lt;br&gt;eg AWS Cloudfront" style="ellipse;shape=cloud;whiteSpace=wrap;html=1;labelBackgroundColor=none;fontColor=#050505;strokeColor=#050505;strokeWidth=3;fillColor=none;" vertex="1" parent="1">
+                    <mxGeometry x="500" y="490" width="250" height="90" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>
