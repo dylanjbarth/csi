@@ -22,7 +22,7 @@ Design website for people to post questions and answers. People should be able t
 
 - 99.9% of the time, question and answer reads and writes should complete within 1 second. 
 - 99.9% of the time, submitted answers should be readable by all users within 5 seconds. 
-- 99.9999% availability, ~60 minutes of downtime per year. [Ref](https://en.wikipedia.org/wiki/High_availability#Percentage_calculation). Essentially no downtime while still giving us wiggle room for an occassional brief outage or a few tight maintenance windows if needed. 
+- 99.99% availability, ~60 minutes of downtime per year. [Ref](https://en.wikipedia.org/wiki/High_availability#Percentage_calculation). Essentially no downtime while still giving us wiggle room for an occassional brief outage or a few tight maintenance windows if needed. 
 
 # System Data
 
@@ -85,7 +85,7 @@ Our data (users, answers, questions, up/down votes) is highly interrelated, and 
 
 # Components
 
-We know that we can fit our workload on a single machine, but in order to meet our SLO of 99.9999% availability, we'll need to ensure we have redundancy in case of hardware failures or power outages in an AZ. We can place one server in two different AZs with a load balancer in front of these. Writes can be synchronously replicated between servers. If a health check fails in one-AZ, it can start sending traffic to the other AZ while the first one is manually recovered. 
+We know that we can fit our workload on a single machine, but in order to meet our SLO of 99.99% availability, we'll need to ensure we have redundancy in case of hardware failures or power outages in an AZ. We can place one server in two different AZs with a load balancer in front of these. Writes can be synchronously replicated between servers. If a health check fails in one-AZ, it can start sending traffic to the other AZ while the first one is manually recovered. 
 
 ![Components](./q-a-components.png)
 
