@@ -27,16 +27,7 @@ We'd like to create a service that will allow us to collect performance data int
 
 # Load Estimation 
 
-To consider: 
-
-- how big is a metric?
-- is there a limit to the number of metrics we allow per service? 
-- if we get one per minute, how many will we get over time?
-- what is our bottleneck going to be for writes? bandwidth? storage? 
-- for our reading use case, what storage should we use? 
-- what will our read bottleneck be? bandwidth? diskio? compute? 
-
-## A single metric
+## How big is a metric
 
 In order to estimate load, we first need to understand what schema our core system object will have. We know that it requires some sort of service identifier, the name of the metric, a numeric value for the metric, a unit enum, and probably some additional metadata like tags. 
 
@@ -46,6 +37,7 @@ In order to estimate load, we first need to understand what schema our core syst
   metric: varchar 100 bytes  
   value: int64 8 bytes  
   unit: enum 8 bytes
+  timestamp: 8 bytes.
   tags: [  # up to 10, this allows customization for filtering and querying
     {
       name: varchar 50 bytes
@@ -68,79 +60,74 @@ For each service, let's assume that we are going to want to collect a variety of
 
 Each service has a variable number of components, but in general we can estimate that there is going to be at least 5 and in most cases no more than 10 total components (although individual components such as the database server or api servers may have many nodes -- thus they will send the types of metrics, but the total number of metrics would increase as they are scaled up).
 
-If we assume each component is going to send 5 metrics by default, and we assume that the engineering teams create an average of 15 custom metrics, then we can expect each component to send 20 metrics. 
+To make this simple, let's assume that we limit the total number of custom metrics per namespace/service to 1000. This gives engineering teams a lot of flexibility to send metrics they care about for their specific use cases (this works out to 100 metrics per component, which is a ton!)
 
 ## Current Load
 
-Ignoring growth for now, let's attempt to calculate the load we might expect on the system given our current estimates. 
-
-3 services
-10 components per service
-20 metrics per service 
+To account for growth, let's assume that within the first 2 years we want to be able to support 10 services, 1000 metrics per service, and that each metric can be updated once per minute. 
 
 ### Writes
 
-||Total Metrics Per Minute | Metrics per second | Metrics Per month | Metrics Per Year |
-|---|----|---|---|---|
-|Volume|3 services * 10 components * 20 metrics = 600 metrics/minute|10 metrics/second| 86.4e4 / day * 30 = ~25M | ~320M|
-|Size/Storage| x1500 bytes = 900KB|15KB|~40GB|~500GB|
-|Bandwidth||15KB/s|||
+||Total Metrics Per Minute | Metrics per second | Metrics Per Year |
+|---|----|---|---|
+|Volume|10 services * 1000 metrics = 10e3 metrics/minute| 100e2/60 => 170 metrics/second | 170 * 86.4e3 * 365 = ~5B |
+|Size/Storage (1.5KB / metric) | 15MB/min |  250 KB/s | 7.5 PB / year *see note | 
+|Bandwidth||250KB/s|||
+
+Note: we know that we don't need to keep high resolution data indefinitely. We could compress older metrics to reduce our storage significantly. Eg instead of keeping minute level granularity, we could store the average, median etc for each hour, or even for the day. This would enable us to look at broad historical trends, and reduce our storage costs significantly.
+
+If we rolled up metrics by the hour, 7.5 PB becomes 7.5 PB / 60 => 125 TB / year.
+
+If we rolled up metrics by the day, 7.5 PB becomes 7.5 / 60 / 24 => 5.2 TB / year.
+
+If we assume that we only need high resolution data for the past 2 weeks, we know that our total set of queryable data at any given time will be: 170 * 86.4e3 * 14 ~ 200M records, 300GB. 
 
 ### Reads
 
-We have a small team, ~100 engineers, and we expect reads to be distributed across our services relatively evenly. If each team member accesses the dashboard a few times a week, we would expect something like 20 active weekly users. Let's assume that in each session they are looking at either individual metrics at various levels of granularity (past hour, past day, past week), or they are looking at a dashboard showing multiple metrics at the same level of granularity. Thus during an active session, we might need to fetch quite a bit of data to populate these dashboards. 
+We have a small team, ~100 engineers, and we expect reads to be distributed across our namespaces/services relatively evenly. If each team member accesses the dashboard a few times a week, we would expect something like 20 active daily users. 
 
-Let's assume in a single session, a user looks at all 20 metrics for each component (max 10) of a single service, so 200 metrics total. Our API can return the data required to load the dashboard as a simple array of int64s to reduce the bandwidth required. An example request might look like: 
+Let's assume that each session lasts 10 minutes they are looking at a dashboard and accessing 1000 metrics over this period.
 
-`fetchMetrics(namespace: str, metricNames: str[], start, end, filters)` where start and end are timestamps, and filters are pairs of tag key value pairs that must match. This would allow the client to fetch metrics for multiple dashboards at once. A response would look like this: 
+Our API can return the data required to load the dashboard as a simple array of int64s to reduce the bandwidth required. An example request might look like: 
 
-We don't need to load minute level granularity for wider time ranges. For example, if the user is looking at the past 30 minutes, we could show them average data points at 5 minute intervals instead, to reduce the amount of data we are actually sending to the client. This would mean 6 data points per metric per 30 minute increment. We could also further improve load times for the full dashboard when looking at broader time ranges by reducing granularity further (10-15 minute averages, etc) and reducing the amount of data returned in a request -- we could send the metrics back as arrays of data points instead of the full metric. 
+`fetchMetrics(namespace: str, metricUCK: str, start, end, filters)` where start and end are timestamps, and filters are pairs of tag key value pairs that must match (eg to filter to a specific component). A response would look like this: 
 
 ```
 {
-  "<namespace>": {
-    "<metric>": [value, value, value, etc]  # if we limit time ranges to the past two weeks, and assume we return values in 5 minute intervals, the max len of this array is (12 5 min intervals in an hour, 288 intervals in a day, 4032 in a week, * 8 bytes ~ 32 KB)
-  }
+  "namespace": ...
+  "metric": ...,
+  "values": [value, value, value, etc]  # if we limit time ranges to the past two weeks, and assume we return values in 5 minute intervals, the max len of this array is (12 5 min intervals in an hour, 288 intervals in a day, 4032 in a week, * 8 bytes ~ 32 KB)
 }
 ```
 
-For the purposes of this exercise, with this schema for the response body, let's assume that we can set some sensible constraints on the total possible response size by bounding: 
-- the total number of metrics in a single request
-- the minimum interval between data points (as the different between start and end gets larger, so does the interval between individual data points). 
+||Total Reads Per Day | Reads per second per session |
+|---|----|---|
+|Volume|1000 per session * 20 = 20e3 | We assume a user session lasts 10 minutes and they access 1k metrics. This gives us a more realistic estimate of read load than dividing total reads per day by number of seconds in a day. 1000/10 = 100 metrics/min / 60 = ~1.5 metrics per second.  | |
+|Bandwidth||~32KB / read => 50KB/s|||
 
-## Future Load
+# Storage
 
-If we account for growth of existing services and introduction of future services, let's assume that our load will grow 100% year over year for the next three years. 
+Based on our load estimation, we need to be able to support a relatively high write throughput and a low read throughput. We also know that our working set of data (for the past 2 weeks), is small enough to fit on a single node (~300 GB, 200M records, 170 writes per second). We can add an asynchronous replica to increase availability in case of failover, although given our availability SLO, this probably isn't necessary. As long as we have regular backups, we should be able to restore from snapshot in enough time to meet our annual three nines SLO. 
 
-Using the future value formula, this means we can expect the following upper bounds: 
-||1st Year|2nd Year|3rd Year|
-|---|---|---|---|
-|Storage|500GB|1TB|2TB|
-|Write Bandwidth|||
-|Read Bandwidth|||
+TODO ERD
 
-Although this doesn't take into account the fact that we can expire some data... or roll it up in aggregations. 
+metric: 
+
+id
+
+
+
+tags
+
+
+# Components 
+
+A write API that writes directly to the DB. (could add a queue here? this would allow us to recover from DB failure and throttle during peak load)
+DB w/o any failover. 
+Aggregator service that reduces older data points and re-writes to metric table. 
+Read api to handle read requests.
 
 # Thoughts on this exercise
 
 - I really struggled with this SD exercise because we didn't get clear ideas of scale from our PM, so I really spent a lot of time waffling about, trying to estimate the load on the system. If one assumption changes upstream, it cascades down to affect every other little assumption which can get exhausting. 
-
-
-- # services are the ones we've designed so far, double in the next year. 
-- how many metrics per service? 
-  - want to be comprehensive, need observability. 
-- what level of granularity do we want on the metrics? 
-  - 1 minute intervals. smallest interval 
-- auto collect some metrics, specific service can add their metrics too. 
-- "what fraction of requests are we getting, which are failing" 
-- will appear in some dashboard where they can click around, filter by service, machine, not sophisticated search. 
-- retention policy on data: 
-  - not strict, but acceptable to have more recent data than historical data
-  - would be great to aggregate - rollups.
-- accuracy: acceptable to drop some data. 
-- SLA for when data is up to date: should be low, could be a minute before they see most recent metrics. 
-- Availability high, but not customer facing -- useful for our debugging purposes. 
-- out of scope: alarms (but should be extendable to this). 
-- budget - high priority: small team of engineers for 1 year. 
-- lots of geographic regions. 
-- how many users? all the engineers interacting with this frequently, at least a few times a week. ~100 people on the team. 
+- could there be a better storage solution here? the metrics are immutable, so maybe just writing to disk? 
