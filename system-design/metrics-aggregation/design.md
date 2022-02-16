@@ -82,6 +82,10 @@ If we rolled up metrics by the day, 7.5 PB becomes 7.5 / 60 / 24 => 5.2 TB / yea
 
 If we assume that we only need high resolution data for the past 2 weeks, we know that our total set of queryable data at any given time will be: 170 * 86.4e3 * 14 ~ 200M records, 300GB. 
 
+#### Partitioning
+
+With either roll up strategy (or a hybrid of the two), we know that our historical record set will be too large to fit on a single node. We could partition our historical data by namespace and range (eg month) to ensure that read requests can be served by a single partition (or in the worst case, by two partitions when 2 weeks span across months).  
+
 ### Reads
 
 We have a small team, ~100 engineers, and we expect reads to be distributed across our namespaces/services relatively evenly. If each team member accesses the dashboard a few times a week, we would expect something like 20 active daily users. 
@@ -107,27 +111,44 @@ Our API can return the data required to load the dashboard as a simple array of 
 
 # Storage
 
-Based on our load estimation, we need to be able to support a relatively high write throughput and a low read throughput. We also know that our working set of data (for the past 2 weeks), is small enough to fit on a single node (~300 GB, 200M records, 170 writes per second). We can add an asynchronous replica to increase availability in case of failover, although given our availability SLO, this probably isn't necessary. As long as we have regular backups, we should be able to restore from snapshot in enough time to meet our annual three nines SLO. 
+Based on our load estimation, we need to be able to support a relatively high write throughput and a relatively low read throughput. We also know that our working set of data (for the past 2 weeks), should be small enough to fit on a single node (~300 GB, 200M records, 170 writes per second), but barely -- and we may want to increase the size of the working set in the future. We also know that our historical data set is much too large to fit on a single node. 
 
-TODO ERD
+We don't need ACID/transactions, we need high throughput writes and the ability to return our datapoints to the user using some simple querying by date and tags (5:1 write:read ratio) and we also will probably want to be able to rapidly do aggregations like averages, median, etc on our numbers. We will have hundreds of millions of rows. Thus, perhaps we can use a NoSQL store that makes it simpler for us to scale horizontally.
 
-metric: 
+my inner dialogue: 
 
-id
+> Is a column store the right solution here? I've never used one before. [Netflix thinks so](https://netflixtechblog.com/scaling-time-series-data-storage-part-i-ec2b6d44ba39). 
+> 
+> Learnings from the above reading: Cassandra is highly efficient for writes, has support for modeling timeseries data. 
 
+1. Batched inserts (put a FIFO queue in front of our writes so we can batch)
+2. Use namespace + metric as the row key, sorted by date for range scanning.
 
+Thus in Cassandra our data model would look like: 
 
-tags
+```
+CREATE TABLE t (
+   namespace_id int,
+   metric_id int,
+   timestamp timestamp,
+   value int
+   PRIMARY KEY ((namespace_id,metric_id),timestamp)
+);
+```
 
+Circling back to our API, this will support the main query our application will be making because we can select by namespace and metric id and then range scan to the records we need because it's sorted by timestamp.
 
 # Components 
 
-A write API that writes directly to the DB. (could add a queue here? this would allow us to recover from DB failure and throttle during peak load)
-DB w/o any failover. 
-Aggregator service that reduces older data points and re-writes to metric table. 
-Read api to handle read requests.
+TODO component diagram: 
+
+1. Load balancer to api endpoints to kafka / queue
+2. queue workers to write into Cassandra 
+3. api workers to query on read and serve API requests. 
+4. background service that aggregates/reduces older datapoints on an interval.
 
 # Thoughts on this exercise
 
 - I really struggled with this SD exercise because we didn't get clear ideas of scale from our PM, so I really spent a lot of time waffling about, trying to estimate the load on the system. If one assumption changes upstream, it cascades down to affect every other little assumption which can get exhausting. 
-- could there be a better storage solution here? the metrics are immutable, so maybe just writing to disk? 
+  - ended up scaling up my initial estimates to make the problem more interesting (eg force it to not all fit on one node)
+- didn't know much about column stores so spent time researching it
